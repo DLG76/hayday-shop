@@ -28,7 +28,7 @@ const CATEGORY_COLORS = {
 
 // ================= ชีตสไตล์ (ปรับสี/ขนาดของแต่ละหมวด) =================
 // แท็บ "style" 1 แถวต่อ 1 หมวด คอลัมน์: category, tab_name, color_main, color_text,
-// color_hover, color_light, color_light_text, card_width, image_height, name_size
+// color_hover, color_light, color_light_text, card_width, card_height, image_height, name_size
 // เว้นว่างช่องไหน = ใช้ค่าเริ่มต้นของช่องนั้น
 const STYLE_SHEET = 'style';
 let styleConfig = {}; // { [category]: {...แถวจากชีต} }
@@ -70,6 +70,7 @@ function getLayout(category) {
   const num = v => { const n = Number(String(v ?? '').replace(/[^\d.]/g, '')); return n > 0 ? n : 0; };
   return {
     cardWidth: num(row.card_width),
+    cardHeight: num(row.card_height),
     imageHeight: num(row.image_height),
     nameSize: num(row.name_size),
     tabName: String(row.tab_name || '').trim()
@@ -82,6 +83,22 @@ function applyCardStyle(card, category) {
   if (wrap && layout.imageHeight) wrap.style.height = `${layout.imageHeight}px`;
   const name = card.querySelector(".upgrade-name, .coin-name");
   if (name && layout.nameSize) name.style.fontSize = `${layout.nameSize}px`;
+
+  // ความสูงการ์ด: ตั้งเป็นความสูงขั้นต่ำ (ถ้ามีรายการเยอะการ์ดจะขยายเอง)
+  // และดันปุ่มเพิ่มลงตะกร้าไปชิดด้านล่างของการ์ด
+  if (layout.cardHeight) {
+    card.style.minHeight = `${layout.cardHeight}px`;
+    card.style.display = "flex";
+    card.style.flexDirection = "column";
+    const body = card.children[1];
+    if (body) {
+      body.style.flex = "1";
+      body.style.display = "flex";
+      body.style.flexDirection = "column";
+    }
+    const btn = card.querySelector(".add-upgrade, .add-coin");
+    if (btn) btn.style.marginTop = "auto";
+  }
 }
 
 // ================= ข้อมูลสินค้าและสถานะ =================
