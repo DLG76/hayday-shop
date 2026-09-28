@@ -1,4 +1,4 @@
-console.log('[hayday] script.js เวอร์ชัน card-style v6 (รองรับราคาส่งตามขั้นบันได + ตัดสต็อก)');
+console.log('[hayday] script.js เวอร์ชัน card-style v6 (รองรับราคาส่งตามขั้นบันได + ตัดสต็อก + โปรโมชั่น)');
 
 // ================= ตั้งค่า API =================
 const SHEETDB_URL = 'https://sheetdb.io/api/v1/bhfhitw4gwpbt';
@@ -157,6 +157,15 @@ function getTierPrice(product, qty) {
   return product.price || 0;
 }
 
+// ฟังก์ชันดึงสต็อกเหรียญ
+async function fetchCoinStock() {
+  const res = await fetch(`${SHEETDB_URL}?sheet=${COIN_STOCK_SHEET}&t=${Date.now()}`, { cache: 'no-store' });
+  const data = await res.json();
+  if (!Array.isArray(data) || data.length === 0) return 0;
+  const row = data.find(r => String(r.id).trim() === COIN_STOCK_ROW_ID) || data[0];
+  return parseNumber(row.stock_coins);
+}
+
 async function loadDataFromSheetDB() {
   if (SHEETDB_URL === 'ใส่_URL_ของ_SHEETDB_ตรงนี้') {
     document.getElementById("loading-state").classList.add("hidden");
@@ -170,7 +179,7 @@ async function loadDataFromSheetDB() {
     const [stockResponse, coinResponse, promoResponse, stockCoins, styles] = await Promise.all([
       fetch(SHEETDB_URL + '?sheet=Stock&t=' + Date.now()),
       fetch(SHEETDB_URL + '?sheet=coin&t=' + Date.now()),
-      fetch(SHEETDB_URL + '?sheet=promo&t=' + Date.now()).catch(() => null), // ดึงข้อมูลโปรโมชั่น (ถ้าหาไม่เจอเว็บก็ไม่พัง)
+      fetch(SHEETDB_URL + '?sheet=promo&t=' + Date.now()).catch(() => null), // ดึงข้อมูลโปรโมชั่น
       fetchCoinStock().catch(err => { console.error("Error fetching coin stock:", err); return 0; }),
       fetchStyleSheet().catch(err => { console.error("Error fetching style sheet:", err); return {}; })
     ]);
@@ -222,7 +231,7 @@ async function loadDataFromSheetDB() {
       active: String(item.active).trim().toLowerCase() === 'true',
       items: item.items ? item.items.split(',').map(i => i.trim()).filter(i => i !== '') : [],
       price_tiers: parseTiers(item.price_tiers) 
-    })).filter(product => product.active); // กลับมาใช้ตัวกรองปกติ
+    })).filter(product => product.active); 
 
     renderDynamicCategories();
     document.getElementById("loading-state").classList.add("hidden");
