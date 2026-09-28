@@ -157,14 +157,6 @@ function getTierPrice(product, qty) {
   return product.price || 0;
 }
 
-async function fetchCoinStock() {
-  const res = await fetch(`${SHEETDB_URL}?sheet=${COIN_STOCK_SHEET}&t=${Date.now()}`, { cache: 'no-store' });
-  const data = await res.json();
-  if (!Array.isArray(data) || data.length === 0) return 0;
-  const row = data.find(r => String(r.id).trim() === COIN_STOCK_ROW_ID) || data[0];
-  return parseNumber(row.stock_coins);
-}
-
 async function loadDataFromSheetDB() {
   if (SHEETDB_URL === 'ใส่_URL_ของ_SHEETDB_ตรงนี้') {
     document.getElementById("loading-state").classList.add("hidden");
@@ -174,9 +166,11 @@ async function loadDataFromSheetDB() {
   }
 
   try {
-    const [stockResponse, coinResponse, stockCoins, styles] = await Promise.all([
+    // เพิ่มการดึงข้อมูลจากแท็บ promo เข้าไป
+    const [stockResponse, coinResponse, promoResponse, stockCoins, styles] = await Promise.all([
       fetch(SHEETDB_URL + '?sheet=Stock&t=' + Date.now()),
       fetch(SHEETDB_URL + '?sheet=coin&t=' + Date.now()),
+      fetch(SHEETDB_URL + '?sheet=promo&t=' + Date.now()).catch(() => null), // ดึงข้อมูลโปรโมชั่น (ถ้าหาไม่เจอเว็บก็ไม่พัง)
       fetchCoinStock().catch(err => { console.error("Error fetching coin stock:", err); return 0; }),
       fetchStyleSheet().catch(err => { console.error("Error fetching style sheet:", err); return {}; })
     ]);
@@ -184,26 +178,36 @@ async function loadDataFromSheetDB() {
 
     const stockData = await stockResponse.json();
     const coinData = await coinResponse.json();
+    
+    // แปลงข้อมูลโปรโมชั่น
+    let promoData = [];
+    if (promoResponse && promoResponse.ok) {
+      try { promoData = await promoResponse.json(); } catch(e) {}
+    }
+    
     coinStock = stockCoins;
 
-    let rawData = [];
-    if (!stockData.error) rawData = rawData.concat(stockData.map(item => ({ ...item, sheetName: 'Stock' })));
-    if (!coinData.error) rawData = rawData.concat(coinData.map(item => ({ ...item, category: 'coin', sheetName: 'coin' })));
-
-    // --- ระบบเช็กรูปโปรโมชั่น ---
-    const promoItem = rawData.find(item => String(item.id).toLowerCase() === 'promo' || String(item.category).toUpperCase() === 'PROMO');
+    // --- ระบบเช็กรูปโปรโมชั่น (ดึงจากแท็บ promo) ---
     const promoSection = document.getElementById('promo-banner-section');
     const promoImg = document.getElementById('promo-banner-img');
 
-    if (promoItem && String(promoItem.active).toLowerCase() === 'true' && promoItem.image_url) {
+    // หาแถวแรกในแท็บ promo ที่ใส่ TRUE และมีลิงก์รูป
+    const activePromo = Array.isArray(promoData) && promoData.find(p => String(p.active).trim().toLowerCase() === 'true' && p.image_url);
+
+    if (activePromo) {
       if (promoSection && promoImg) {
-        promoImg.src = promoItem.image_url;
+        promoImg.src = activePromo.image_url.trim();
         promoSection.classList.remove('hidden');
       }
     } else {
       if (promoSection) promoSection.classList.add('hidden');
     }
     // -------------------------
+
+    // รวมข้อมูลสินค้าตามปกติ (ไม่มีข้อมูลโปรโมชั่นมาปนแล้ว)
+    let rawData = [];
+    if (!stockData.error) rawData = rawData.concat(stockData.map(item => ({ ...item, sheetName: 'Stock' })));
+    if (!coinData.error) rawData = rawData.concat(coinData.map(item => ({ ...item, category: 'coin', sheetName: 'coin' })));
 
     allProducts = rawData.map(item => ({
       ...item,
@@ -215,10 +219,10 @@ async function loadDataFromSheetDB() {
       price_1m: parseNumber(item.price_1m),
       pack_amount: parseNumber(item.pack_amount) || 89,
       stock_quantity: parseNumber(item.stock_quantity),
-      active: String(item.active).toLowerCase() === 'true',
+      active: String(item.active).trim().toLowerCase() === 'true',
       items: item.items ? item.items.split(',').map(i => i.trim()).filter(i => i !== '') : [],
       price_tiers: parseTiers(item.price_tiers) 
-    })).filter(product => product.active && String(product.id).toLowerCase() !== 'promo' && String(product.category).toUpperCase() !== 'PROMO'); // เอาแถว PROMO ออกจากแท็บสินค้า
+    })).filter(product => product.active); // กลับมาใช้ตัวกรองปกติ
 
     renderDynamicCategories();
     document.getElementById("loading-state").classList.add("hidden");
