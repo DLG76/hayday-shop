@@ -1,11 +1,11 @@
 // ================= ตั้งค่า API =================
-const SHEETDB_URL = 'https://sheetdb.io/api/v1/bhfhitw4gwpbt'; 
+const SHEETDB_URL = 'https://sheetdb.io/api/v1/bhfhitw4gwpbt';
 
 // ================= ตั้งค่าชื่อหมวดหมู่และสี (Dynamic Theme) =================
 const CATEGORY_NAMES = {
   "upgrade": "ไอเท็มอัปเกรด",
   "coin": "วนเหรียญ",
-  "decor": "ของตกแต่ง" 
+  "decor": "ของตกแต่ง"
 };
 
 const CATEGORY_COLORS = {
@@ -33,28 +33,28 @@ async function loadDataFromSheetDB() {
 
   try {
     const [stockResponse, coinResponse] = await Promise.all([
-      fetch(SHEETDB_URL + '?sheet=Stock'), 
-      fetch(SHEETDB_URL + '?sheet=coin')   
+      fetch(SHEETDB_URL + '?sheet=Stock'),
+      fetch(SHEETDB_URL + '?sheet=coin')
     ]);
 
     const stockData = await stockResponse.json();
     const coinData = await coinResponse.json();
-    
+
     let rawData = [];
-    if (!stockData.error) rawData = rawData.concat(stockData.map(item => ({...item, sheetName: 'Stock'})));
-    if (!coinData.error) rawData = rawData.concat(coinData.map(item => ({...item, sheetName: 'coin'})));
+    if (!stockData.error) rawData = rawData.concat(stockData.map(item => ({ ...item, sheetName: 'Stock' })));
+    if (!coinData.error) rawData = rawData.concat(coinData.map(item => ({ ...item, sheetName: 'coin' })));
 
     allProducts = rawData.map(item => ({
       ...item,
       price: Number(item.price) || 0,
-      price_select: Number(item.price_select) || 0, 
-      price_pure: Number(item.price_pure) || 0,     
-      pack_amount: Number(item.pack_amount) || 89,  
+      price_select: Number(item.price_select) || 0,
+      price_pure: Number(item.price_pure) || 0,
+      pack_amount: Number(item.pack_amount) || 89,
       stock_quantity: Number(item.stock_quantity) || 0,
       active: item.active === 'TRUE' || item.active === 'true',
       items: item.items ? item.items.split(',').map(i => i.trim()).filter(i => i !== '') : []
     })).filter(product => product.active);
-    
+
     renderDynamicCategories();
     document.getElementById("loading-state").classList.add("hidden");
 
@@ -69,7 +69,7 @@ async function loadDataFromSheetDB() {
 function renderDynamicCategories() {
   const tabsContainer = document.getElementById("dynamic-tabs-container");
   const viewsContainer = document.getElementById("dynamic-views-container");
-  
+
   tabsContainer.innerHTML = '';
   viewsContainer.innerHTML = '';
 
@@ -83,7 +83,7 @@ function renderDynamicCategories() {
   }
 
   categories.forEach((cat, index) => {
-    const displayName = CATEGORY_NAMES[cat] || cat; 
+    const displayName = CATEGORY_NAMES[cat] || cat;
     const tabBtn = document.createElement("button");
     tabBtn.type = "button";
     tabBtn.dataset.targetCat = cat;
@@ -95,10 +95,10 @@ function renderDynamicCategories() {
     const viewDiv = document.createElement("div");
     viewDiv.id = `view-${cat}`;
     viewDiv.className = index === 0 ? "mt-7" : "hidden mt-7";
-    
+
     const gridDiv = document.createElement("div");
     gridDiv.className = "grid grid-cols-1 gap-5 lg:grid-cols-3";
-    
+
     viewDiv.appendChild(gridDiv);
     viewsContainer.appendChild(viewDiv);
 
@@ -117,11 +117,11 @@ function renderDynamicCategories() {
 
 function switchCategory(category) {
   currentCategory = category;
-  
+
   document.querySelectorAll("#dynamic-tabs-container button").forEach(btn => {
     const cat = btn.dataset.targetCat;
     const theme = CATEGORY_COLORS[cat] || CATEGORY_COLORS["default"];
-    
+
     if (cat === category) {
       btn.style.backgroundColor = theme.main;
       btn.style.color = theme.text;
@@ -152,7 +152,7 @@ function renderPackProductCard(product, container) {
   card.querySelector(".upgrade-category").textContent = product.subcategory;
   card.querySelector(".upgrade-name").textContent = product.name;
   setupImage(card.querySelector(".product-image-wrap"), product.image_url, product.name);
-  
+
   const headerLine = card.querySelector("div.h-2");
   if (headerLine) headerLine.style.backgroundColor = theme.main;
 
@@ -168,8 +168,8 @@ function renderPackProductCard(product, container) {
   }
 
   const choices = card.querySelector(".pack-choices");
-  choices.innerHTML = ""; 
-  
+  choices.innerHTML = "";
+
   const packTypes = [
     { key: "mixed", label: "แบบคละ", price: product.price },
     { key: "select", label: "แบบเลือก", price: product.price_select },
@@ -177,7 +177,7 @@ function renderPackProductCard(product, container) {
   ];
 
   packTypes.forEach((pack) => {
-    if(pack.price > 0) { 
+    if (pack.price > 0) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = `pack-choice rounded-xl border-2 px-1 py-2 text-xs font-bold transition`;
@@ -192,18 +192,18 @@ function renderPackProductCard(product, container) {
   addBtn.disabled = !available;
   addBtn.style.backgroundColor = available ? theme.main : "#a6b8a4";
   addBtn.style.color = available ? theme.text : "#ffffff";
-  addBtn.onmouseenter = () => { if(available) addBtn.style.backgroundColor = theme.hover; };
-  addBtn.onmouseleave = () => { if(available) addBtn.style.backgroundColor = theme.main; };
-  
+  addBtn.onmouseenter = () => { if (available) addBtn.style.backgroundColor = theme.hover; };
+  addBtn.onmouseleave = () => { if (available) addBtn.style.backgroundColor = theme.main; };
+
   addBtn.addEventListener("click", () => addUpgradeToCart(card, product));
   container.appendChild(fragment);
-  selectPack(container.lastElementChild, product, "mixed"); 
+  selectPack(container.lastElementChild, product, "mixed");
 }
 
 function selectPack(card, product, packKey) {
   const theme = CATEGORY_COLORS[product.category] || CATEGORY_COLORS["default"];
   card.dataset.packKey = packKey;
-  
+
   card.querySelectorAll(".pack-choice").forEach(button => {
     if (button.dataset.packKey === packKey) {
       button.style.borderColor = theme.main;
@@ -215,13 +215,13 @@ function selectPack(card, product, packKey) {
       button.style.color = "#597260";
     }
   });
-  
+
   const allocation = card.querySelector(".allocation");
   const mixNote = card.querySelector(".mix-note");
-  
+
   mixNote.classList.add("hidden");
   allocation.classList.add("hidden");
-  allocation.innerHTML = ""; 
+  allocation.innerHTML = "";
 
   if (packKey === "mixed") {
     mixNote.classList.remove("hidden");
@@ -237,7 +237,7 @@ function selectPack(card, product, packKey) {
     const total = document.createElement("p");
     total.className = "allocation-total mt-2 rounded-xl px-3 py-2 text-sm font-bold";
     allocation.appendChild(total);
-    
+
     allocation.querySelectorAll(".allocation-input").forEach(input => input.addEventListener("input", () => validateAllocation(card, product, packKey)));
     validateAllocation(card, product, packKey);
   } else if (packKey === "pure") {
@@ -246,7 +246,7 @@ function selectPack(card, product, packKey) {
     title.className = "mb-2 text-sm font-bold text-[#496555]";
     title.textContent = `เลือกไอเท็มที่ต้องการ (ล้วน ${product.pack_amount} ชิ้น)`;
     allocation.appendChild(title);
-    
+
     const selectBox = document.createElement("select");
     selectBox.className = "pure-select w-full rounded-xl border border-[#cfe0ca] px-3 py-2 text-sm font-semibold text-[#356a47]";
     product.items.forEach((item) => {
@@ -267,20 +267,20 @@ function validateAllocation(card, product, packKey) {
     const values = inputs.map(input => Number(input.value));
     const invalid = values.some(value => !Number.isInteger(value) || value < 0);
     const total = values.reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
-    
+
     const totalEl = card.querySelector(".allocation-total");
-    if(totalEl) {
-        totalEl.textContent = `รวม ${total}/${product.pack_amount} ชิ้น`;
-        const valid = !invalid && total === product.pack_amount;
-        if(valid) {
-            totalEl.style.backgroundColor = theme.light;
-            totalEl.style.color = theme.lightText;
-        } else {
-            totalEl.style.backgroundColor = "#fff1ed";
-            totalEl.style.color = "#ad5545";
-        }
-        setValidation(card, valid ? "" : `กรุณาระบุจำนวนให้ครบ ${product.pack_amount} ชิ้น`, !valid);
-        return valid;
+    if (totalEl) {
+      totalEl.textContent = `รวม ${total}/${product.pack_amount} ชิ้น`;
+      const valid = !invalid && total === product.pack_amount;
+      if (valid) {
+        totalEl.style.backgroundColor = theme.light;
+        totalEl.style.color = theme.lightText;
+      } else {
+        totalEl.style.backgroundColor = "#fff1ed";
+        totalEl.style.color = "#ad5545";
+      }
+      setValidation(card, valid ? "" : `กรุณาระบุจำนวนให้ครบ ${product.pack_amount} ชิ้น`, !valid);
+      return valid;
     }
   }
   return true;
@@ -308,16 +308,16 @@ function addUpgradeToCart(card, product) {
   }
 
   const cartId = `${product.id}-${packKey}-${details}`;
-  addCartItem({ 
-    cartId, 
-    productId: product.id, 
-    name: product.name, 
-    group: product.subcategory, 
-    packLabel: packLabel, 
-    details, 
-    unitPrice: packPrice, 
-    stock: product.stock_quantity, 
-    sheetName: product.sheetName 
+  addCartItem({
+    cartId,
+    productId: product.id,
+    name: product.name,
+    group: product.subcategory,
+    packLabel: packLabel,
+    details,
+    unitPrice: packPrice,
+    stock: product.stock_quantity,
+    sheetName: product.sheetName
   });
   setValidation(card, "เพิ่มลงตะกร้าแล้ว 🌻", false);
 }
@@ -333,7 +333,7 @@ function renderSimpleProductCard(product, container) {
   card.querySelector(".coin-price").textContent = formatBaht(product.price);
   card.querySelector(".coin-stock").textContent = `สต็อกคงเหลือ: ${stockText(product.stock_quantity)}`;
   setupImage(card.querySelector(".product-image-wrap"), product.image_url, product.name);
-  
+
   const headerLine = card.querySelector("div.h-2");
   if (headerLine) headerLine.style.backgroundColor = theme.main;
 
@@ -347,25 +347,25 @@ function renderSimpleProductCard(product, container) {
     badge.style.backgroundColor = "#ffe0d9";
     badge.style.color = "#a85242";
   }
-  
+
   const addBtn = card.querySelector(".add-coin");
   addBtn.disabled = !available;
   addBtn.style.backgroundColor = available ? theme.main : "#a6b8a4";
   addBtn.style.color = available ? theme.text : "#ffffff";
-  addBtn.onmouseenter = () => { if(available) addBtn.style.backgroundColor = theme.hover; };
-  addBtn.onmouseleave = () => { if(available) addBtn.style.backgroundColor = theme.main; };
+  addBtn.onmouseenter = () => { if (available) addBtn.style.backgroundColor = theme.hover; };
+  addBtn.onmouseleave = () => { if (available) addBtn.style.backgroundColor = theme.main; };
 
   addBtn.addEventListener("click", () => {
-    addCartItem({ 
-      cartId: product.id, 
-      productId: product.id, 
-      name: product.name, 
-      group: product.subcategory, 
-      packLabel: product.amount ? `จำนวน ${product.amount}` : `1 ชิ้น`, 
-      details: product.amount ? `รายละเอียด: ${product.amount}` : "สินค้าจำนวน 1 ชุด", 
-      unitPrice: product.price, 
-      stock: product.stock_quantity, 
-      sheetName: product.sheetName 
+    addCartItem({
+      cartId: product.id,
+      productId: product.id,
+      name: product.name,
+      group: product.subcategory,
+      packLabel: product.amount ? `จำนวน ${product.amount}` : `1 ชิ้น`,
+      details: product.amount ? `รายละเอียด: ${product.amount}` : "สินค้าจำนวน 1 ชุด",
+      unitPrice: product.price,
+      stock: product.stock_quantity,
+      sheetName: product.sheetName
     });
   });
   container.appendChild(fragment);
@@ -387,7 +387,7 @@ function setupImage(wrapper, imageUrl, label) {
 }
 function setValidation(card, message, isError) {
   const messageEl = card.querySelector(".validation-message");
-  if(!messageEl) return;
+  if (!messageEl) return;
   messageEl.textContent = message;
   messageEl.classList.toggle("hidden", !message);
   messageEl.className = `validation-message mt-3 rounded-xl px-3 py-2 text-sm ${message ? (isError ? "bg-[#fff1ed] text-[#ad5545]" : "bg-[#eaf7e6] text-[#356a47]") : "hidden"}`;
@@ -434,12 +434,12 @@ function renderCart() {
     row.querySelector(".increase").onclick = () => { if (item.quantity < item.stock) { item.quantity++; renderCart(); } };
     itemsEl.appendChild(row);
   });
-  
+
   const count = cartState.items.reduce((sum, item) => sum + item.quantity, 0);
   const total = cartState.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
   document.getElementById("cart-count").textContent = count;
   document.getElementById("cart-total").textContent = formatBaht(total);
-  if(typeof lucide !== 'undefined') lucide.createIcons();
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function toggleCart(open) {
@@ -459,7 +459,7 @@ async function submitOrder(event) {
   event.preventDefault();
   const customerName = document.getElementById("customer-name").value.trim();
   const customerContact = document.getElementById("customer-contact").value.trim();
-  
+
   if (!cartState.items.length) return showCheckoutMessage("กรุณาเพิ่มสินค้าลงตะกร้าก่อนส่งคำสั่งซื้อ", true);
   if (!customerName || !customerContact) return showCheckoutMessage("กรุณากรอกชื่อผู้สั่งและช่องทางติดต่อ", true);
 
@@ -469,9 +469,9 @@ async function submitOrder(event) {
 
   try {
     const ref = `HD-${Date.now().toString().slice(-6)}`;
-    
+
     // รวมรายการสินค้าทั้งหมดในตะกร้าให้อยู่ในข้อความเดียว
-    const orderSummary = cartState.items.map(item => 
+    const orderSummary = cartState.items.map(item =>
       `[${item.name} / ${item.packLabel}] รายละเอียด: ${item.details} จำนวน: ${item.quantity} ชิ้น (ราคารวม: ${item.unitPrice * item.quantity}฿)`
     ).join(" | ");
 
@@ -486,27 +486,36 @@ async function submitOrder(event) {
       },
       body: JSON.stringify({
         data: {
-          "ref": ref,
-          "name": customerName,
-          "contact": customerContact,
-          "order_details": orderSummary,
-          "total_price": totalPrice,
-          "status": "Pending" // รออนุมัติ
+          ref: ref,
+          name: customerName,
+          contact: customerContact,
+          order_details: orderSummary,
+          total_price: totalPrice,
+          status: "Pending"
         }
       })
     });
 
-    if (!response.ok) throw new Error("Network response was not ok");
+    const result = await response.json();
+
+    console.log("========== SHEETDB ==========");
+    console.log("Status:", response.status);
+    console.log("Response:", result);
+    console.log("=============================");
+
+    if (!response.ok) {
+      throw new Error(JSON.stringify(result));
+    }
 
     document.getElementById("order-reference").textContent = `เลขอ้างอิง ${ref}`;
     document.getElementById("confirmation-modal").classList.remove("hidden");
     document.getElementById("confirmation-modal").classList.add("flex");
-    
+
     cartState.items = [];
     document.getElementById("checkout-form").reset();
     renderCart();
     toggleCart(false);
-    
+
   } catch (error) {
     console.error("Error submitting order:", error);
     showCheckoutMessage("เกิดข้อผิดพลาดในการส่งคำสั่งซื้อ กรุณาลองใหม่อีกครั้ง", true);
@@ -524,7 +533,7 @@ function closeConfirmation() {
 // ================= เริ่มต้นการทำงาน =================
 function initializeApp() {
   renderCart();
-  if(typeof lucide !== 'undefined') lucide.createIcons();
-  loadDataFromSheetDB(); 
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  loadDataFromSheetDB();
 }
 document.addEventListener("DOMContentLoaded", initializeApp);
