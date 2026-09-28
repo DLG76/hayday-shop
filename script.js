@@ -328,7 +328,14 @@ function renderCoinTierCard(tier, container) {
   if (headerLine) headerLine.style.backgroundColor = theme.main;
 
   // ข้อความสต็อกเหรียญกลาง (ใช้ที่เดิมของ demo-stock-note)
-  const stockNote = card.querySelector(".demo-stock-note");
+  // ถ้าเทมเพลตใน index.html ไม่มี .demo-stock-note ให้สร้างขึ้นเองก่อนปุ่มเลือกจำนวน
+  let stockNote = card.querySelector(".demo-stock-note");
+  if (!stockNote) {
+    stockNote = document.createElement("p");
+    stockNote.className = "demo-stock-note mt-3";
+    const anchor = card.querySelector(".pack-choices");
+    anchor.parentNode.insertBefore(stockNote, anchor);
+  }
   stockNote.classList.add("coin-stock-live");
   stockNote.classList.remove("text-xs");
   stockNote.classList.add("text-sm", "font-semibold");
