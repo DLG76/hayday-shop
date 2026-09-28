@@ -30,20 +30,43 @@ const CATEGORY_COLORS = {
 // แท็บ "style" 1 แถวต่อ 1 หมวด คอลัมน์: category, tab_name, color_main, color_text,
 // color_hover, color_light, color_light_text, card_width, card_height, image_height, name_size
 // เว้นว่างช่องไหน = ใช้ค่าเริ่มต้นของช่องนั้น
-const STYLE_SHEET = 'style';
+// รองรับหลายชื่อแท็บ (เผื่อตั้งชื่อว่า style หรือ styleSheet) จะลองตามลำดับนี้
+const STYLE_SHEET_NAMES = ['style', 'styleSheet', 'stylesheet', 'Style', 'StyleSheet'];
 let styleConfig = {}; // { [category]: {...แถวจากชีต} }
 
+async function fetchSheetRows(sheetName) {
+  const base = `${SHEETDB_URL}?sheet=${encodeURIComponent(sheetName)}`;
+  for (const url of [`${base}&t=${Date.now()}`, base]) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      const data = await res.json();
+      if (Array.isArray(data)) return data;
+      console.warn(`[style] แท็บ "${sheetName}" อ่านไม่ได้:`, data);
+    } catch (err) {
+      console.warn(`[style] แท็บ "${sheetName}" โหลดไม่สำเร็จ:`, err);
+    }
+  }
+  return null;
+}
+
 async function fetchStyleSheet() {
-  const res = await fetch(`${SHEETDB_URL}?sheet=${STYLE_SHEET}&t=${Date.now()}`, { cache: 'no-store' });
-  const data = await res.json();
-  const map = {};
-  if (Array.isArray(data)) {
-    data.forEach(row => {
+  for (const name of STYLE_SHEET_NAMES) {
+    const rows = await fetchSheetRows(name);
+    if (!rows || rows.length === 0) continue;
+
+    const map = {};
+    rows.forEach(rawRow => {
+      // ตัดช่องว่างหัวท้ายของชื่อคอลัมน์และค่า category กันพิมพ์เกิน
+      const row = {};
+      Object.keys(rawRow).forEach(k => { row[k.trim()] = rawRow[k]; });
       const key = String(row.category || '').trim();
       if (key) map[key] = row;
     });
+    console.log(`[style] โหลดแท็บ "${name}" สำเร็จ`, map);
+    return map;
   }
-  return map;
+  console.warn('[style] ไม่พบแท็บสไตล์ (ลองชื่อ: ' + STYLE_SHEET_NAMES.join(', ') + ') จึงใช้ค่าเริ่มต้น');
+  return {};
 }
 
 function validColor(value) {
@@ -188,6 +211,7 @@ function renderDynamicCategories() {
   }
 
   categories.forEach((cat, index) => {
+    if (!styleConfig[cat]) console.warn(`[style] ไม่มีแถว category "${cat}" ในแท็บสไตล์ จึงใช้ค่าเริ่มต้น`);
     const layout = getLayout(cat);
     const displayName = layout.tabName || CATEGORY_NAMES[cat] || cat;
 
