@@ -26,6 +26,64 @@ const CATEGORY_COLORS = {
   "default": { main: "#ffc944", text: "#594300", hover: "#d4a02c", light: "#fff0ad", lightText: "#76540c" }
 };
 
+// ================= ชีตสไตล์ (ปรับสี/ขนาดของแต่ละหมวด) =================
+// แท็บ "style" 1 แถวต่อ 1 หมวด คอลัมน์: category, tab_name, color_main, color_text,
+// color_hover, color_light, color_light_text, card_width, image_height, name_size
+// เว้นว่างช่องไหน = ใช้ค่าเริ่มต้นของช่องนั้น
+const STYLE_SHEET = 'style';
+let styleConfig = {}; // { [category]: {...แถวจากชีต} }
+
+async function fetchStyleSheet() {
+  const res = await fetch(`${SHEETDB_URL}?sheet=${STYLE_SHEET}&t=${Date.now()}`, { cache: 'no-store' });
+  const data = await res.json();
+  const map = {};
+  if (Array.isArray(data)) {
+    data.forEach(row => {
+      const key = String(row.category || '').trim();
+      if (key) map[key] = row;
+    });
+  }
+  return map;
+}
+
+function validColor(value) {
+  const v = String(value || '').trim();
+  return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v) ? v : '';
+}
+
+// รวมสีเริ่มต้นของหมวด + สีที่ตั้งในชีตสไตล์
+function getTheme(category) {
+  const base = CATEGORY_COLORS[category] || CATEGORY_COLORS["default"];
+  const row = styleConfig[category] || {};
+  return {
+    main: validColor(row.color_main) || base.main,
+    text: validColor(row.color_text) || base.text,
+    hover: validColor(row.color_hover) || base.hover,
+    light: validColor(row.color_light) || base.light,
+    lightText: validColor(row.color_light_text) || base.lightText
+  };
+}
+
+// ปรับขนาดการ์ดของหมวด (ความกว้างการ์ด, ความสูงรูป, ขนาดชื่อสินค้า)
+function getLayout(category) {
+  const row = styleConfig[category] || {};
+  const num = v => { const n = Number(String(v ?? '').replace(/[^\d.]/g, '')); return n > 0 ? n : 0; };
+  return {
+    cardWidth: num(row.card_width),
+    imageHeight: num(row.image_height),
+    nameSize: num(row.name_size),
+    tabName: String(row.tab_name || '').trim()
+  };
+}
+
+function applyCardStyle(card, category) {
+  const layout = getLayout(category);
+  const wrap = card.querySelector(".product-image-wrap");
+  if (wrap && layout.imageHeight) wrap.style.height = `${layout.imageHeight}px`;
+  const name = card.querySelector(".upgrade-name, .coin-name");
+  if (name && layout.nameSize) name.style.fontSize = `${layout.nameSize}px`;
+}
+
 // ================= ข้อมูลสินค้าและสถานะ =================
 let allProducts = [];
 let currentCategory = "";
@@ -56,11 +114,13 @@ async function loadDataFromSheetDB() {
   }
 
   try {
-    const [stockResponse, coinResponse, stockCoins] = await Promise.all([
+    const [stockResponse, coinResponse, stockCoins, styles] = await Promise.all([
       fetch(SHEETDB_URL + '?sheet=Stock'),
       fetch(SHEETDB_URL + '?sheet=coin'),
-      fetchCoinStock().catch(err => { console.error("Error fetching coin stock:", err); return 0; })
+      fetchCoinStock().catch(err => { console.error("Error fetching coin stock:", err); return 0; }),
+      fetchStyleSheet().catch(err => { console.error("Error fetching style sheet:", err); return {}; })
     ]);
+    styleConfig = styles;
 
     const stockData = await stockResponse.json();
     const coinData = await coinResponse.json();
@@ -111,7 +171,8 @@ function renderDynamicCategories() {
   }
 
   categories.forEach((cat, index) => {
-    const displayName = CATEGORY_NAMES[cat] || cat;
+    const layout = getLayout(cat);
+    const displayName = layout.tabName || CATEGORY_NAMES[cat] || cat;
 
     const tabBtn = document.createElement("button");
     tabBtn.type = "button";
@@ -126,7 +187,13 @@ function renderDynamicCategories() {
     viewDiv.className = index === 0 ? "mt-7" : "hidden mt-7";
 
     const gridDiv = document.createElement("div");
-    gridDiv.className = "grid grid-cols-1 gap-5 lg:grid-cols-3";
+    if (layout.cardWidth) {
+      // ตั้งความกว้างการ์ดจากชีตสไตล์: จำนวนคอลัมน์ปรับตามหน้าจออัตโนมัติ
+      gridDiv.className = "grid gap-5";
+      gridDiv.style.gridTemplateColumns = `repeat(auto-fill, minmax(min(${layout.cardWidth}px, 100%), 1fr))`;
+    } else {
+      gridDiv.className = "grid grid-cols-1 gap-5 lg:grid-cols-3";
+    }
     viewDiv.appendChild(gridDiv);
     viewsContainer.appendChild(viewDiv);
 
@@ -151,7 +218,7 @@ function switchCategory(category) {
   currentCategory = category;
   document.querySelectorAll("#dynamic-tabs-container button").forEach(btn => {
     const cat = btn.dataset.targetCat;
-    const theme = CATEGORY_COLORS[cat] || CATEGORY_COLORS["default"];
+    const theme = getTheme(cat);
     if (cat === category) {
       btn.style.backgroundColor = theme.main;
       btn.style.color = theme.text;
@@ -229,7 +296,7 @@ function formatCoins(value) {
 function renderCoinTierCard(tier, container) {
   const fragment = document.getElementById("upgrade-card-template").content.cloneNode(true);
   const card = fragment.querySelector("article");
-  const theme = CATEGORY_COLORS.coin;
+  const theme = getTheme("coin");
 
   card.classList.add("coin-tier-card");
   card.dataset.tierId = tier.id;
@@ -238,6 +305,7 @@ function renderCoinTierCard(tier, container) {
   card.querySelector(".upgrade-category").textContent = tier.subcategory || "";
   card.querySelector(".upgrade-name").textContent = tier.name;
   setupImage(card.querySelector(".product-image-wrap"), tier.image_url, tier.name);
+  applyCardStyle(card, "coin");
 
   const headerLine = card.querySelector("div.h-2");
   if (headerLine) headerLine.style.backgroundColor = theme.main;
@@ -280,7 +348,7 @@ function renderCoinTierCard(tier, container) {
 }
 
 function updateCoinCard(card) {
-  const theme = CATEGORY_COLORS.coin;
+  const theme = getTheme("coin");
   const remaining = coinStock - coinsInCart();
   const buttons = [...card.querySelectorAll(".pack-choice")];
 
@@ -367,12 +435,13 @@ function addCoinToCart(card, tier) {
 function renderPackProductCard(product, container) {
   const fragment = document.getElementById("upgrade-card-template").content.cloneNode(true);
   const card = fragment.querySelector("article");
-  const theme = CATEGORY_COLORS[product.category] || CATEGORY_COLORS["default"];
+  const theme = getTheme(product.category);
 
   card.dataset.productId = product.id;
   card.querySelector(".upgrade-category").textContent = product.subcategory;
   card.querySelector(".upgrade-name").textContent = product.name;
   setupImage(card.querySelector(".product-image-wrap"), product.image_url, product.name);
+  applyCardStyle(card, product.category);
 
   const headerLine = card.querySelector("div.h-2");
   if (headerLine) headerLine.style.backgroundColor = theme.main;
@@ -422,7 +491,7 @@ function renderPackProductCard(product, container) {
 }
 
 function selectPack(card, product, packKey) {
-  const theme = CATEGORY_COLORS[product.category] || CATEGORY_COLORS["default"];
+  const theme = getTheme(product.category);
   card.dataset.packKey = packKey;
 
   card.querySelectorAll(".pack-choice").forEach(button => {
@@ -481,7 +550,7 @@ function selectPack(card, product, packKey) {
 
 function validateAllocation(card, product, packKey) {
   if (packKey === "select") {
-    const theme = CATEGORY_COLORS[product.category] || CATEGORY_COLORS["default"];
+    const theme = getTheme(product.category);
     const inputs = [...card.querySelectorAll(".allocation-input")];
     const values = inputs.map(input => Number(input.value));
     const invalid = values.some(value => !Number.isInteger(value) || value < 0);
@@ -552,13 +621,14 @@ function addUpgradeToCart(card, product) {
 function renderSimpleProductCard(product, container) {
   const fragment = document.getElementById("coin-card-template").content.cloneNode(true);
   const card = fragment.querySelector("article");
-  const theme = CATEGORY_COLORS[product.category] || CATEGORY_COLORS["default"];
+  const theme = getTheme(product.category);
 
   card.querySelector(".coin-level").textContent = product.subcategory || product.category;
   card.querySelector(".coin-name").textContent = product.name;
   card.querySelector(".coin-price").textContent = formatBaht(product.price);
   card.querySelector(".coin-stock").textContent = `สต็อกคงเหลือ: ${stockText(product.stock_quantity)}`;
   setupImage(card.querySelector(".product-image-wrap"), product.image_url, product.name);
+  applyCardStyle(card, product.category);
 
   const headerLine = card.querySelector("div.h-2");
   if (headerLine) headerLine.style.backgroundColor = theme.main;
