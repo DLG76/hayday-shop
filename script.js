@@ -8,36 +8,11 @@ const CATEGORY_NAMES = {
   "decor": "ของตกแต่ง" 
 };
 
-// กำหนดชุดสีของแต่ละหมวดหมู่
 const CATEGORY_COLORS = {
-  "upgrade": {
-    main: "#4d9b55",    // สีเขียวหลัก
-    text: "#ffffff",    
-    hover: "#2f7640",   // สีเขียวเข้มตอนเอาเมาส์ชี้
-    light: "#eaf7e6",   // สีเขียวอ่อนพื้นหลัง
-    lightText: "#356a47"
-  },
-  "coin": {
-    main: "#67b9db",    // สีฟ้าหลัก
-    text: "#ffffff",
-    hover: "#477b91",
-    light: "#eaf8fd",
-    lightText: "#477b91"
-  },
-  "decor": {
-    main: "#ffb9a5",    // สีส้มพีช
-    text: "#6e3529",
-    hover: "#d5765e",
-    light: "#fff1ed",
-    lightText: "#ad5545"
-  },
-  "default": {
-    main: "#ffc944",    // สีเหลือง (กรณีไม่ได้ตั้งหมวดหมู่ไว้)
-    text: "#594300",
-    hover: "#d4a02c",
-    light: "#fff0ad",
-    lightText: "#76540c"
-  }
+  "upgrade": { main: "#4d9b55", text: "#ffffff", hover: "#2f7640", light: "#eaf7e6", lightText: "#356a47" },
+  "coin": { main: "#67b9db", text: "#ffffff", hover: "#477b91", light: "#eaf8fd", lightText: "#477b91" },
+  "decor": { main: "#ffb9a5", text: "#6e3529", hover: "#d5765e", light: "#fff1ed", lightText: "#ad5545" },
+  "default": { main: "#ffc944", text: "#594300", hover: "#d4a02c", light: "#fff0ad", lightText: "#76540c" }
 };
 
 // ================= ข้อมูลสินค้าและสถานะ =================
@@ -90,7 +65,7 @@ async function loadDataFromSheetDB() {
   }
 }
 
-// ================= 2. ฟังก์ชันสร้างแท็บอัตโนมัติ (พร้อมเปลี่ยนสี) =================
+// ================= 2. ฟังก์ชันสร้างแท็บอัตโนมัติ =================
 function renderDynamicCategories() {
   const tabsContainer = document.getElementById("dynamic-tabs-container");
   const viewsContainer = document.getElementById("dynamic-views-container");
@@ -112,7 +87,6 @@ function renderDynamicCategories() {
     const tabBtn = document.createElement("button");
     tabBtn.type = "button";
     tabBtn.dataset.targetCat = cat;
-    // ตั้งค่า Class เริ่มต้นให้ปุ่ม
     tabBtn.className = "canva-button flex-1 rounded-2xl px-5 py-3 font-bold whitespace-nowrap transition-all shadow-sm";
     tabBtn.textContent = displayName;
     tabBtn.onclick = () => switchCategory(cat);
@@ -149,12 +123,10 @@ function switchCategory(category) {
     const theme = CATEGORY_COLORS[cat] || CATEGORY_COLORS["default"];
     
     if (cat === category) {
-      // ปุ่มที่ถูกเลือก (เปลี่ยนสีตามหมวดหมู่)
       btn.style.backgroundColor = theme.main;
       btn.style.color = theme.text;
       btn.style.transform = "translateY(-2px)";
     } else {
-      // ปุ่มที่ไม่ได้เลือก (สีเทาปกติ)
       btn.style.backgroundColor = "#ffffff";
       btn.style.color = "#3c7067";
       btn.style.transform = "none";
@@ -170,7 +142,7 @@ function switchCategory(category) {
   });
 }
 
-// ================= 3. วาดการ์ดสินค้าแบบแพ็กเกจ (และใส่สี) =================
+// ================= 3. วาดการ์ดสินค้าแบบแพ็กเกจ =================
 function renderPackProductCard(product, container) {
   const fragment = document.getElementById("upgrade-card-template").content.cloneNode(true);
   const card = fragment.querySelector("article");
@@ -181,11 +153,9 @@ function renderPackProductCard(product, container) {
   card.querySelector(".upgrade-name").textContent = product.name;
   setupImage(card.querySelector(".product-image-wrap"), product.image_url, product.name);
   
-  // เปลี่ยนสีขอบเส้นด้านบนการ์ด
   const headerLine = card.querySelector("div.h-2");
   if (headerLine) headerLine.style.backgroundColor = theme.main;
 
-  // เปลี่ยนสีป้ายสถานะสต็อก
   const badge = card.querySelector(".stock-badge");
   const available = isAvailable(product);
   badge.textContent = available ? "พร้อมขาย" : "สินค้าหมด";
@@ -197,7 +167,6 @@ function renderPackProductCard(product, container) {
     badge.style.color = "#a85242";
   }
 
-  // สร้างปุ่มเลือกราคา
   const choices = card.querySelector(".pack-choices");
   choices.innerHTML = ""; 
   
@@ -219,7 +188,6 @@ function renderPackProductCard(product, container) {
     }
   });
 
-  // เปลี่ยนสีปุ่มเพิ่มลงตะกร้า
   const addBtn = card.querySelector(".add-upgrade");
   addBtn.disabled = !available;
   addBtn.style.backgroundColor = available ? theme.main : "#a6b8a4";
@@ -236,7 +204,6 @@ function selectPack(card, product, packKey) {
   const theme = CATEGORY_COLORS[product.category] || CATEGORY_COLORS["default"];
   card.dataset.packKey = packKey;
   
-  // เปลี่ยนสีปุ่มเมื่อกดเลือก
   card.querySelectorAll(".pack-choice").forEach(button => {
     if (button.dataset.packKey === packKey) {
       button.style.borderColor = theme.main;
@@ -259,7 +226,6 @@ function selectPack(card, product, packKey) {
   if (packKey === "mixed") {
     mixNote.classList.remove("hidden");
     setValidation(card, "", false);
-
   } else if (packKey === "select") {
     allocation.classList.remove("hidden");
     product.items.forEach((item) => {
@@ -274,7 +240,6 @@ function selectPack(card, product, packKey) {
     
     allocation.querySelectorAll(".allocation-input").forEach(input => input.addEventListener("input", () => validateAllocation(card, product, packKey)));
     validateAllocation(card, product, packKey);
-
   } else if (packKey === "pure") {
     allocation.classList.remove("hidden");
     const title = document.createElement("p");
@@ -357,7 +322,7 @@ function addUpgradeToCart(card, product) {
   setValidation(card, "เพิ่มลงตะกร้าแล้ว 🌻", false);
 }
 
-// ================= 4. วาดการ์ดปกติ (ชิ้นเดี่ยว และใส่สี) =================
+// ================= 4. วาดการ์ดปกติ (ชิ้นเดี่ยว) =================
 function renderSimpleProductCard(product, container) {
   const fragment = document.getElementById("coin-card-template").content.cloneNode(true);
   const card = fragment.querySelector("article");
@@ -369,11 +334,9 @@ function renderSimpleProductCard(product, container) {
   card.querySelector(".coin-stock").textContent = `สต็อกคงเหลือ: ${stockText(product.stock_quantity)}`;
   setupImage(card.querySelector(".product-image-wrap"), product.image_url, product.name);
   
-  // เปลี่ยนสีขอบเส้นด้านบนการ์ด
   const headerLine = card.querySelector("div.h-2");
   if (headerLine) headerLine.style.backgroundColor = theme.main;
 
-  // เปลี่ยนสีป้ายสถานะสต็อก
   const badge = card.querySelector(".stock-badge");
   const available = isAvailable(product);
   badge.textContent = available ? "พร้อมขาย" : "สินค้าหมด";
@@ -385,7 +348,6 @@ function renderSimpleProductCard(product, container) {
     badge.style.color = "#a85242";
   }
   
-  // เปลี่ยนสีปุ่มเพิ่มลงตะกร้า
   const addBtn = card.querySelector(".add-coin");
   addBtn.disabled = !available;
   addBtn.style.backgroundColor = available ? theme.main : "#a6b8a4";
@@ -492,39 +454,50 @@ function showCheckoutMessage(message, error) {
   el.classList.remove("hidden");
 }
 
-// ================= 6. ระบบส่งออเดอร์ =================
+// ================= 6. ระบบส่งออเดอร์ไปที่แท็บ orders (POST) =================
 async function submitOrder(event) {
   event.preventDefault();
-  const name = document.getElementById("customer-name").value.trim();
-  const contact = document.getElementById("customer-contact").value.trim();
+  const customerName = document.getElementById("customer-name").value.trim();
+  const customerContact = document.getElementById("customer-contact").value.trim();
   
   if (!cartState.items.length) return showCheckoutMessage("กรุณาเพิ่มสินค้าลงตะกร้าก่อนส่งคำสั่งซื้อ", true);
-  if (!name || !contact) return showCheckoutMessage("กรุณากรอกชื่อผู้สั่งและช่องทางติดต่อ", true);
+  if (!customerName || !customerContact) return showCheckoutMessage("กรุณากรอกชื่อผู้สั่งและช่องทางติดต่อ", true);
 
   const submitBtn = document.querySelector("#checkout-form button[type='submit']");
   submitBtn.disabled = true;
-  submitBtn.textContent = "กำลังดำเนินการ...";
+  submitBtn.textContent = "กำลังส่งคำสั่งซื้อ...";
 
   try {
-    const updatePromises = cartState.items.map(item => {
-      const newStockQuantity = item.stock - item.quantity;
-      return fetch(`${SHEETDB_URL}/id/${item.productId}?sheet=${item.sheetName}`, {
-        method: 'PATCH',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          data: {
-            "stock_quantity": newStockQuantity
-          }
-        })
-      });
+    const ref = `HD-${Date.now().toString().slice(-6)}`;
+    
+    // รวมรายการสินค้าทั้งหมดในตะกร้าให้อยู่ในข้อความเดียว
+    const orderSummary = cartState.items.map(item => 
+      `[${item.name} / ${item.packLabel}] รายละเอียด: ${item.details} จำนวน: ${item.quantity} ชิ้น (ราคารวม: ${item.unitPrice * item.quantity}฿)`
+    ).join(" | ");
+
+    const totalPrice = cartState.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+
+    // ยิงข้อมูลแบบ POST ไปที่ SheetDB (แท็บ orders)
+    const response = await fetch(`${SHEETDB_URL}?sheet=orders`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        data: {
+          "ref": ref,
+          "name": customerName,
+          "contact": customerContact,
+          "order_details": orderSummary,
+          "total_price": totalPrice,
+          "status": "Pending" // รออนุมัติ
+        }
+      })
     });
 
-    await Promise.all(updatePromises);
+    if (!response.ok) throw new Error("Network response was not ok");
 
-    const ref = `HD-${Date.now().toString().slice(-6)}`;
     document.getElementById("order-reference").textContent = `เลขอ้างอิง ${ref}`;
     document.getElementById("confirmation-modal").classList.remove("hidden");
     document.getElementById("confirmation-modal").classList.add("flex");
@@ -534,11 +507,9 @@ async function submitOrder(event) {
     renderCart();
     toggleCart(false);
     
-    loadDataFromSheetDB(); 
-    
   } catch (error) {
     console.error("Error submitting order:", error);
-    showCheckoutMessage("เกิดข้อผิดพลาดในการตัดสต็อก กรุณาลองใหม่อีกครั้ง", true);
+    showCheckoutMessage("เกิดข้อผิดพลาดในการส่งคำสั่งซื้อ กรุณาลองใหม่อีกครั้ง", true);
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = "ส่งคำสั่งซื้อ";
