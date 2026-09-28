@@ -1,4 +1,4 @@
-console.log('[hayday] script.js เวอร์ชัน card-style v5 (รองรับ card_height แบบตายตัว)');
+console.log('[hayday] script.js เวอร์ชัน card-style v6 (รองรับราคาส่งตามขั้นบันได + ตัดสต็อก)');
 
 // ================= ตั้งค่า API =================
 const SHEETDB_URL = 'https://sheetdb.io/api/v1/bhfhitw4gwpbt';
@@ -29,12 +29,8 @@ const CATEGORY_COLORS = {
 };
 
 // ================= ชีตสไตล์ (ปรับสี/ขนาดของแต่ละหมวด) =================
-// แท็บ "style" 1 แถวต่อ 1 หมวด คอลัมน์: category, tab_name, color_main, color_text,
-// color_hover, color_light, color_light_text, card_width, card_height, image_height, name_size
-// เว้นว่างช่องไหน = ใช้ค่าเริ่มต้นของช่องนั้น
-// รองรับหลายชื่อแท็บ (เผื่อตั้งชื่อว่า style หรือ styleSheet) จะลองตามลำดับนี้
 const STYLE_SHEET_NAMES = ['style', 'styleSheet', 'stylesheet', 'Style', 'StyleSheet'];
-let styleConfig = {}; // { [category]: {...แถวจากชีต} }
+let styleConfig = {}; 
 
 async function fetchSheetRows(sheetName) {
   const base = `${SHEETDB_URL}?sheet=${encodeURIComponent(sheetName)}`;
@@ -58,7 +54,6 @@ async function fetchStyleSheet() {
 
     const map = {};
     rows.forEach(rawRow => {
-      // ตัดช่องว่างหัวท้ายของชื่อคอลัมน์และค่า category กันพิมพ์เกิน
       const row = {};
       Object.keys(rawRow).forEach(k => { row[k.trim()] = rawRow[k]; });
       const key = String(row.category || '').trim();
@@ -76,7 +71,6 @@ function validColor(value) {
   return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v) ? v : '';
 }
 
-// รวมสีเริ่มต้นของหมวด + สีที่ตั้งในชีตสไตล์
 function getTheme(category) {
   const base = CATEGORY_COLORS[category] || CATEGORY_COLORS["default"];
   const row = styleConfig[category] || {};
@@ -89,7 +83,6 @@ function getTheme(category) {
   };
 }
 
-// ปรับขนาดการ์ดของหมวด (ความกว้างการ์ด, ความสูงรูป, ขนาดชื่อสินค้า)
 function getLayout(category) {
   const row = styleConfig[category] || {};
   const num = v => { const n = Number(String(v ?? '').replace(/[^\d.]/g, '')); return n > 0 ? n : 0; };
@@ -105,7 +98,6 @@ function getLayout(category) {
 function applyCardStyle(card, category) {
   const layout = getLayout(category);
   console.debug(`[style] การ์ด ${category}`, layout);
-  // ใช้ !important เพื่อไม่ให้ style.css หรือ Tailwind มาเขียนทับค่าจากชีต
   const set = (el, prop, value) => { if (el) el.style.setProperty(prop, value, "important"); };
 
   set(card.querySelector(".product-image-wrap"), "height", layout.imageHeight ? `${layout.imageHeight}px` : "");
@@ -114,9 +106,6 @@ function applyCardStyle(card, category) {
   const name = card.querySelector(".upgrade-name, .coin-name");
   if (name && layout.nameSize) set(name, "font-size", `${layout.nameSize}px`);
 
-  // ความสูงการ์ด: กำหนดความสูงตายตัวตามที่ตั้ง (ทั้งเพิ่มและลด)
-  // ถ้าเนื้อหายาวกว่าความสูงที่ตั้ง ส่วนเนื้อหาจะเลื่อนดูได้ในการ์ด
-  // ปุ่มเพิ่มลงตะกร้าจะชิดด้านล่างของเนื้อหาเสมอ
   if (layout.cardHeight) {
     set(card, "height", `${layout.cardHeight}px`);
     set(card, "min-height", "0");
@@ -139,7 +128,7 @@ function applyCardStyle(card, category) {
 // ================= ข้อมูลสินค้าและสถานะ =================
 let allProducts = [];
 let currentCategory = "";
-let coinStock = 0; // เหรียญคงเหลือรวม (ใช้ร่วมกันทุก level)
+let coinStock = 0; 
 const appSettings = { music_url: "" };
 const cartState = { items: [] };
 let musicAudio = null;
@@ -147,6 +136,25 @@ let musicAudio = null;
 // ================= 1. ฟังก์ชันดึงข้อมูลจากชีต =================
 function parseNumber(value) {
   return Number(String(value ?? '').replace(/,/g, '').trim()) || 0;
+}
+
+// ฟังก์ชันแยกเงื่อนไขราคาส่ง
+function parseTiers(text) {
+  if (!text) return [];
+  return String(text).split(',').map(t => {
+    const [min, price] = t.split(':');
+    return { min: Number(min), price: Number(price) };
+  }).filter(t => !isNaN(t.min) && !isNaN(t.price)).sort((a, b) => b.min - a.min);
+}
+
+// ฟังก์ชันหาราคาตามจำนวนชิ้น
+function getTierPrice(product, qty) {
+  if (product.price_tiers && product.price_tiers.length > 0) {
+    for (let tier of product.price_tiers) {
+      if (qty >= tier.min) return tier.price;
+    }
+  }
+  return product.price || 0;
 }
 
 async function fetchCoinStock() {
@@ -167,8 +175,8 @@ async function loadDataFromSheetDB() {
 
   try {
     const [stockResponse, coinResponse, stockCoins, styles] = await Promise.all([
-      fetch(SHEETDB_URL + '?sheet=Stock'),
-      fetch(SHEETDB_URL + '?sheet=coin'),
+      fetch(SHEETDB_URL + '?sheet=Stock&t=' + Date.now()), // เพิ่มเพื่อล้างแคช
+      fetch(SHEETDB_URL + '?sheet=coin&t=' + Date.now()),  // เพิ่มเพื่อล้างแคช
       fetchCoinStock().catch(err => { console.error("Error fetching coin stock:", err); return 0; }),
       fetchStyleSheet().catch(err => { console.error("Error fetching style sheet:", err); return {}; })
     ]);
@@ -180,7 +188,6 @@ async function loadDataFromSheetDB() {
 
     let rawData = [];
     if (!stockData.error) rawData = rawData.concat(stockData.map(item => ({ ...item, sheetName: 'Stock' })));
-    // แถวในชีต coin ทั้งหมดถือเป็นหมวด "coin" (1 แถว = 1 ช่วงเลเวล)
     if (!coinData.error) rawData = rawData.concat(coinData.map(item => ({ ...item, category: 'coin', sheetName: 'coin' })));
 
     allProducts = rawData.map(item => ({
@@ -194,7 +201,8 @@ async function loadDataFromSheetDB() {
       pack_amount: parseNumber(item.pack_amount) || 89,
       stock_quantity: parseNumber(item.stock_quantity),
       active: String(item.active).toLowerCase() === 'true',
-      items: item.items ? item.items.split(',').map(i => i.trim()).filter(i => i !== '') : []
+      items: item.items ? item.items.split(',').map(i => i.trim()).filter(i => i !== '') : [],
+      price_tiers: parseTiers(item.price_tiers) // เก็บข้อมูลราคาส่ง
     })).filter(product => product.active);
 
     renderDynamicCategories();
@@ -241,7 +249,6 @@ function renderDynamicCategories() {
 
     const gridDiv = document.createElement("div");
     if (layout.cardWidth) {
-      // ตั้งความกว้างการ์ดจากชีตสไตล์: จำนวนคอลัมน์ปรับตามหน้าจออัตโนมัติ
       gridDiv.className = "grid gap-5";
       gridDiv.style.gridTemplateColumns = `repeat(auto-fill, minmax(min(${layout.cardWidth}px, 100%), 1fr))`;
     } else {
@@ -292,11 +299,10 @@ function switchCategory(category) {
   });
 }
 
-// ================= ตัวเลือกจำนวนชุด (ใช้กับทุกการ์ดสินค้า) =================
-function attachQtyStepper(card, beforeEl, maxQty, disabled) {
+// ================= ตัวเลือกจำนวนชุด =================
+function attachQtyStepper(card, beforeEl, maxQty, disabled, onQtyChangeCallback = null) {
   const wrap = document.createElement("div");
   wrap.className = "qty-stepper mt-4 flex items-center justify-between gap-3";
-  // เมื่อตั้งความสูงการ์ด ปุ่มเพิ่มลงตะกร้าจะถูกดันลงล่าง จึงเว้นระยะใต้ตัวเลือกจำนวนไว้
   if (card.style.height) wrap.style.setProperty("margin-bottom", "1rem", "important");
   wrap.innerHTML = `
     <span class="text-sm font-bold text-[#496555]">จำนวนชุด</span>
@@ -307,7 +313,6 @@ function attachQtyStepper(card, beforeEl, maxQty, disabled) {
     </div>`;
   beforeEl.parentNode.insertBefore(wrap, beforeEl);
 
-  // การ์ดที่ไม่มีช่องข้อความแจ้งเตือน ให้เพิ่มให้
   if (!card.querySelector(".validation-message")) {
     const msg = document.createElement("p");
     msg.className = "validation-message hidden";
@@ -316,9 +321,15 @@ function attachQtyStepper(card, beforeEl, maxQty, disabled) {
   }
 
   if (maxQty > 0) card.dataset.maxQty = String(maxQty);
-  wrap.querySelector(".qty-minus").addEventListener("click", () => setQty(card, getQty(card) - 1));
-  wrap.querySelector(".qty-plus").addEventListener("click", () => setQty(card, getQty(card) + 1));
-  wrap.querySelector(".set-qty-input").addEventListener("change", () => setQty(card, getQty(card)));
+
+  const handleQtyUpdate = (n) => {
+    setQty(card, n);
+    if (onQtyChangeCallback) onQtyChangeCallback(getQty(card));
+  };
+
+  wrap.querySelector(".qty-minus").addEventListener("click", () => handleQtyUpdate(getQty(card) - 1));
+  wrap.querySelector(".qty-plus").addEventListener("click", () => handleQtyUpdate(getQty(card) + 1));
+  wrap.querySelector(".set-qty-input").addEventListener("change", () => handleQtyUpdate(getQty(card)));
   setQtyDisabled(card, !!disabled);
 }
 
@@ -339,7 +350,7 @@ function setQtyDisabled(card, disabled) {
   card.querySelectorAll(".qty-minus, .qty-plus, .set-qty-input").forEach(el => { el.disabled = disabled; });
 }
 
-// ================= 2.5 หมวดเหรียญ: 3 ช่อง (ช่วงเลเวล) x เลือก 1 แสน / 5 แสน / 1 ล้าน =================
+// ================= 2.5 หมวดเหรียญ =================
 function coinsInCart() {
   return cartState.items.reduce((sum, item) => sum + (item.coinAmount || 0) * item.quantity, 0);
 }
@@ -365,8 +376,6 @@ function renderCoinTierCard(tier, container) {
   const headerLine = card.querySelector("div.h-2");
   if (headerLine) headerLine.style.backgroundColor = theme.main;
 
-  // ข้อความสต็อกเหรียญกลาง (ใช้ที่เดิมของ demo-stock-note)
-  // ถ้าเทมเพลตใน index.html ไม่มี .demo-stock-note ให้สร้างขึ้นเองก่อนปุ่มเลือกจำนวน
   let stockNote = card.querySelector(".demo-stock-note");
   if (!stockNote) {
     stockNote = document.createElement("p");
@@ -379,7 +388,6 @@ function renderCoinTierCard(tier, container) {
   stockNote.classList.add("text-sm", "font-semibold");
   stockNote.style.color = theme.lightText;
 
-  // ปุ่มเลือกจำนวนเหรียญ
   const choices = card.querySelector(".pack-choices");
   choices.innerHTML = "";
   COIN_AMOUNTS.forEach(opt => {
@@ -414,7 +422,6 @@ function updateCoinCard(card) {
   const remaining = coinStock - coinsInCart();
   const buttons = [...card.querySelectorAll(".pack-choice")];
 
-  // ถ้าจำนวนที่เลือกไว้เกินเหรียญคงเหลือ ให้เลือกตัวเลือกแรกที่ซื้อได้แทน
   let selected = Number(card.dataset.amount) || 0;
   if (!selected || selected > remaining) {
     const firstOk = buttons.find(b => Number(b.dataset.amount) <= remaining);
@@ -448,7 +455,6 @@ function updateCoinCard(card) {
   const addBtn = card.querySelector(".add-upgrade");
   const canAdd = available && selected > 0;
 
-  // จำนวนชุดสูงสุดที่ซื้อได้ = เหรียญคงเหลือ (หักของในตะกร้า) / เหรียญต่อชุด
   card.dataset.maxQty = String(selected > 0 ? Math.max(1, Math.floor(remaining / selected)) : 1);
   setQty(card, getQty(card));
   setQtyDisabled(card, !canAdd);
@@ -458,7 +464,6 @@ function updateCoinCard(card) {
   addBtn.style.color = canAdd ? theme.text : "#ffffff";
 }
 
-// อัปเดตการ์ดเหรียญทุกใบ + ข้อความสต็อกกลาง (เรียกทุกครั้งที่สต็อกหรือตะกร้าเปลี่ยน)
 function refreshCoinUI() {
   document.querySelectorAll(".coin-stock-live").forEach(el => {
     el.textContent = `เหรียญคงเหลือ: ${formatCoins(coinStock)}`;
@@ -687,7 +692,10 @@ function renderSimpleProductCard(product, container) {
 
   card.querySelector(".coin-level").textContent = product.subcategory || product.category;
   card.querySelector(".coin-name").textContent = product.name;
-  card.querySelector(".coin-price").textContent = formatBaht(product.price);
+  
+  const priceEl = card.querySelector(".coin-price");
+  priceEl.textContent = formatBaht(product.price);
+  
   card.querySelector(".coin-stock").textContent = `สต็อกคงเหลือ: ${stockText(product.stock_quantity)}`;
   setupImage(card.querySelector(".product-image-wrap"), product.image_url, product.name);
   applyCardStyle(card, product.category);
@@ -713,7 +721,27 @@ function renderSimpleProductCard(product, container) {
   addBtn.onmouseenter = () => { if (available) addBtn.style.backgroundColor = theme.hover; };
   addBtn.onmouseleave = () => { if (available) addBtn.style.backgroundColor = theme.main; };
 
-  attachQtyStepper(card, addBtn, Number(product.stock_quantity), !available);
+  // --- แสดงโน้ตแจ้งลูกค้าถ้าร้านตั้งราคาส่งไว้ ---
+  if (product.price_tiers && product.price_tiers.length > 0) {
+    const tierNote = document.createElement("p");
+    tierNote.className = "mt-1 text-xs text-[#d5765e] font-semibold";
+    const tierText = product.price_tiers.map(t => `ซื้อ ${t.min}+ ชิ้นละ ${t.price}฿`).join(' | ');
+    tierNote.textContent = "ราคาส่ง: " + tierText;
+    priceEl.parentNode.insertBefore(tierNote, priceEl.nextSibling);
+  }
+
+  // --- อัปเดตราคาแบบ Real-time เมื่อลูกค้าเปลี่ยนจำนวน ---
+  const updatePriceDisplay = (qty) => {
+    const currentPrice = getTierPrice(product, qty);
+    if(qty > 1 && currentPrice < product.price) {
+      priceEl.innerHTML = `<span class="line-through text-gray-400 text-xs mr-1">${product.price}฿</span>${currentPrice}฿ <span class="text-xs font-normal text-gray-500">/ชิ้น (รวม ${currentPrice * qty}฿)</span>`;
+    } else {
+      priceEl.textContent = `${currentPrice} บาท`;
+    }
+  };
+
+  attachQtyStepper(card, addBtn, Number(product.stock_quantity), !available, updatePriceDisplay);
+  
   addBtn.addEventListener("click", () => {
     const qty = getQty(card);
     const ok = addCartItem({
@@ -723,13 +751,15 @@ function renderSimpleProductCard(product, container) {
       group: product.subcategory,
       packLabel: product.amount ? `จำนวน ${product.amount}` : `1 ชิ้น`,
       details: product.amount ? `รายละเอียด: ${product.amount}` : "สินค้าจำนวน 1 ชุด",
-      unitPrice: product.price,
+      unitPrice: product.price, // เก็บราคาเริ่มต้นไว้ (จะคำนวณใหม่ตอนอยู่ในตะกร้า)
       stock: product.stock_quantity,
-      sheetName: product.sheetName
+      sheetName: product.sheetName,
+      price_tiers: product.price_tiers
     }, qty);
 
     if (ok) {
       setQty(card, 1);
+      updatePriceDisplay(1);
       setValidation(card, `เพิ่มลงตะกร้าแล้ว ${qty} ชุด 🌻`, false);
     } else {
       setValidation(card, `เกินสต็อกที่มี (เหลือ ${product.stock_quantity} ชุด รวมที่อยู่ในตะกร้าแล้ว)`, true);
@@ -769,7 +799,6 @@ function addCartItem(newItem, qty = 1) {
   const existing = cartState.items.find(item => item.cartId === newItem.cartId);
 
   if (newItem.coinAmount) {
-    // เหรียญ: สต็อกใช้ร่วมกันทั้งหมด เช็กจากยอดเหรียญรวมในตะกร้า
     if (coinsInCart() + newItem.coinAmount * qty > coinStock) return false;
   } else if ((existing ? existing.quantity : 0) + qty > newItem.stock) {
     return false;
@@ -793,6 +822,10 @@ function renderCart() {
   itemsEl.classList.toggle("hidden", empty);
 
   cartState.items.forEach(item => {
+    // คำนวณราคาส่งแบบ Real-time ตามจำนวน
+    const currentUnitPrice = getTierPrice(item, item.quantity);
+    item.currentUnitPrice = currentUnitPrice; 
+
     const row = document.createElement("article");
     row.className = "mb-3 rounded-2xl border border-[#e1ebdd] bg-white p-3";
     row.innerHTML = `
@@ -807,7 +840,7 @@ function renderCart() {
           <span class="min-w-6 text-center font-bold">${item.quantity}</span>
           <button type="button" class="increase rounded-lg bg-[#edf5e9] px-2 py-1 text-[#356a47]" aria-label="เพิ่มจำนวน">+</button>
         </div>
-        <strong class="text-[#dd745c]">${formatBaht(item.unitPrice * item.quantity)}</strong>
+        <strong class="text-[#dd745c]">${formatBaht(currentUnitPrice * item.quantity)}</strong>
       </div>`;
 
     row.querySelector(".remove-item").onclick = () => { cartState.items = cartState.items.filter(x => x.cartId !== item.cartId); renderCart(); };
@@ -823,7 +856,7 @@ function renderCart() {
   });
 
   const count = cartState.items.reduce((sum, item) => sum + item.quantity, 0);
-  const total = cartState.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const total = cartState.items.reduce((sum, item) => sum + item.quantity * item.currentUnitPrice, 0);
   document.getElementById("cart-count").textContent = count;
   document.getElementById("cart-total").textContent = formatBaht(total);
 
@@ -843,7 +876,7 @@ function showCheckoutMessage(message, error) {
   el.classList.remove("hidden");
 }
 
-// ================= 6. ระบบส่งออเดอร์ + ตัดสต็อกเหรียญ =================
+// ================= 6. ระบบส่งออเดอร์ + ตัดสต็อก =================
 async function updateCoinStockInSheet(newStock) {
   const res = await fetch(`${SHEETDB_URL}/id/${COIN_STOCK_ROW_ID}?sheet=${COIN_STOCK_SHEET}`, {
     method: 'PATCH',
@@ -867,7 +900,6 @@ async function submitOrder(event) {
   submitBtn.textContent = "กำลังส่งคำสั่งซื้อ...";
 
   try {
-    // ถ้ามีเหรียญในตะกร้า ดึงสต็อกล่าสุดจากชีตมาเช็กก่อน (กันคนอื่นซื้อไปก่อนแล้ว)
     const coinsToBuy = coinsInCart();
     let latestCoinStock = coinStock;
     if (coinsToBuy > 0) {
@@ -881,13 +913,13 @@ async function submitOrder(event) {
     }
 
     const ref = `HD-${Date.now().toString().slice(-6)}`;
-
     const orderSummary = cartState.items.map(item =>
-      `[${item.name} / ${item.packLabel}] รายละเอียด: ${item.details} จำนวน: ${item.quantity} ${item.coinAmount ? 'ชุด' : 'ชิ้น'} (ราคารวม: ${item.unitPrice * item.quantity}฿)`
+      `[${item.name} / ${item.packLabel}] รายละเอียด: ${item.details} จำนวน: ${item.quantity} ${item.coinAmount ? 'ชุด' : 'ชิ้น'} (ราคารวม: ${item.currentUnitPrice * item.quantity}฿)`
     ).join(" | ");
 
-    const totalPrice = cartState.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const totalPrice = cartState.items.reduce((sum, item) => sum + (item.quantity * item.currentUnitPrice), 0);
 
+    // ส่งข้อมูลออเดอร์
     const response = await fetch(`${SHEETDB_URL}?sheet=orders`, {
       method: 'POST',
       headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
@@ -906,13 +938,26 @@ async function submitOrder(event) {
     const result = await response.json();
     if (!response.ok) throw new Error(JSON.stringify(result));
 
-    // ตัดสต็อกเหรียญกลาง (ทุก level ใช้สต็อกก้อนเดียวกัน)
+    // ตัดสต็อกสินค้าปกติผ่าน PATCH
+    const updatePromises = cartState.items.map(item => {
+      if (!item.coinAmount) { // ถ้าไม่ใช่หมวดเหรียญ
+        const newStockQuantity = item.stock - item.quantity;
+        return fetch(`${SHEETDB_URL}/id/${item.productId}?sheet=${item.sheetName}`, {
+          method: 'PATCH',
+          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: { "stock_quantity": newStockQuantity } })
+        });
+      }
+    });
+    await Promise.all(updatePromises);
+
+    // ตัดสต็อกเหรียญ
     if (coinsToBuy > 0) {
       const newStock = latestCoinStock - coinsToBuy;
       try {
         await updateCoinStockInSheet(newStock);
       } catch (stockErr) {
-        console.error("อัปเดตสต็อกเหรียญไม่สำเร็จ (ออเดอร์ถูกบันทึกแล้ว):", stockErr);
+        console.error("อัปเดตสต็อกเหรียญไม่สำเร็จ:", stockErr);
       }
       coinStock = newStock;
     }
@@ -923,8 +968,11 @@ async function submitOrder(event) {
 
     cartState.items = [];
     document.getElementById("checkout-form").reset();
-    renderCart(); // จะรีเฟรชการ์ดเหรียญด้วย
+    renderCart();
     toggleCart(false);
+
+    // โหลดข้อมูลใหม่เพื่ออัปเดตสต็อกที่หน้าเว็บ
+    loadDataFromSheetDB(); 
 
   } catch (error) {
     console.error("Error submitting order:", error);
