@@ -1,3 +1,5 @@
+console.log('[hayday] script.js เวอร์ชัน card-style v5 (รองรับ card_height แบบตายตัว)');
+
 // ================= ตั้งค่า API =================
 const SHEETDB_URL = 'https://sheetdb.io/api/v1/bhfhitw4gwpbt';
 
@@ -102,28 +104,35 @@ function getLayout(category) {
 
 function applyCardStyle(card, category) {
   const layout = getLayout(category);
-  const wrap = card.querySelector(".product-image-wrap");
-  if (wrap && layout.imageHeight) wrap.style.height = `${layout.imageHeight}px`;
+  console.debug(`[style] การ์ด ${category}`, layout);
+  // ใช้ !important เพื่อไม่ให้ style.css หรือ Tailwind มาเขียนทับค่าจากชีต
+  const set = (el, prop, value) => { if (el) el.style.setProperty(prop, value, "important"); };
+
+  set(card.querySelector(".product-image-wrap"), "height", layout.imageHeight ? `${layout.imageHeight}px` : "");
+  if (!layout.imageHeight) card.querySelector(".product-image-wrap")?.style.removeProperty("height");
+
   const name = card.querySelector(".upgrade-name, .coin-name");
-  if (name && layout.nameSize) name.style.fontSize = `${layout.nameSize}px`;
+  if (name && layout.nameSize) set(name, "font-size", `${layout.nameSize}px`);
 
   // ความสูงการ์ด: กำหนดความสูงตายตัวตามที่ตั้ง (ทั้งเพิ่มและลด)
   // ถ้าเนื้อหายาวกว่าความสูงที่ตั้ง ส่วนเนื้อหาจะเลื่อนดูได้ในการ์ด
   // ปุ่มเพิ่มลงตะกร้าจะชิดด้านล่างของเนื้อหาเสมอ
   if (layout.cardHeight) {
-    card.style.height = `${layout.cardHeight}px`;
-    card.style.display = "flex";
-    card.style.flexDirection = "column";
+    set(card, "height", `${layout.cardHeight}px`);
+    set(card, "min-height", "0");
+    set(card, "max-height", "none");
+    set(card, "display", "flex");
+    set(card, "flex-direction", "column");
     const body = card.children[1];
     if (body) {
-      body.style.flex = "1";
-      body.style.minHeight = "0";
-      body.style.overflowY = "auto";
-      body.style.display = "flex";
-      body.style.flexDirection = "column";
+      set(body, "flex", "1");
+      set(body, "min-height", "0");
+      set(body, "overflow-y", "auto");
+      set(body, "display", "flex");
+      set(body, "flex-direction", "column");
     }
     const btn = card.querySelector(".add-upgrade, .add-coin");
-    if (btn) btn.style.marginTop = "auto";
+    set(btn, "margin-top", "auto");
   }
 }
 
@@ -288,7 +297,7 @@ function attachQtyStepper(card, beforeEl, maxQty, disabled) {
   const wrap = document.createElement("div");
   wrap.className = "qty-stepper mt-4 flex items-center justify-between gap-3";
   // เมื่อตั้งความสูงการ์ด ปุ่มเพิ่มลงตะกร้าจะถูกดันลงล่าง จึงเว้นระยะใต้ตัวเลือกจำนวนไว้
-  if (card.style.height) wrap.style.marginBottom = "1rem";
+  if (card.style.height) wrap.style.setProperty("margin-bottom", "1rem", "important");
   wrap.innerHTML = `
     <span class="text-sm font-bold text-[#496555]">จำนวนชุด</span>
     <div class="flex items-center gap-2">
