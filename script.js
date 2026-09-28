@@ -172,6 +172,51 @@ function switchCategory(category) {
   });
 }
 
+// ================= ตัวเลือกจำนวนชุด (ใช้กับทุกการ์ดสินค้า) =================
+function attachQtyStepper(card, beforeEl, maxQty, disabled) {
+  const wrap = document.createElement("div");
+  wrap.className = "qty-stepper mt-4 flex items-center justify-between gap-3";
+  wrap.innerHTML = `
+    <span class="text-sm font-bold text-[#496555]">จำนวนชุด</span>
+    <div class="flex items-center gap-2">
+      <button type="button" class="qty-minus rounded-lg bg-[#edf5e9] px-3 py-1.5 font-bold text-[#356a47] disabled:opacity-40 disabled:cursor-not-allowed" aria-label="ลดจำนวนชุด">−</button>
+      <input type="number" class="set-qty-input w-16 rounded-xl border border-[#cfe0ca] px-2 py-1.5 text-center font-bold disabled:opacity-40" min="1" step="1" value="1" inputmode="numeric" aria-label="จำนวนชุด">
+      <button type="button" class="qty-plus rounded-lg bg-[#edf5e9] px-3 py-1.5 font-bold text-[#356a47] disabled:opacity-40 disabled:cursor-not-allowed" aria-label="เพิ่มจำนวนชุด">+</button>
+    </div>`;
+  beforeEl.parentNode.insertBefore(wrap, beforeEl);
+
+  // การ์ดที่ไม่มีช่องข้อความแจ้งเตือน ให้เพิ่มให้
+  if (!card.querySelector(".validation-message")) {
+    const msg = document.createElement("p");
+    msg.className = "validation-message hidden";
+    msg.setAttribute("aria-live", "polite");
+    beforeEl.parentNode.insertBefore(msg, beforeEl);
+  }
+
+  if (maxQty > 0) card.dataset.maxQty = String(maxQty);
+  wrap.querySelector(".qty-minus").addEventListener("click", () => setQty(card, getQty(card) - 1));
+  wrap.querySelector(".qty-plus").addEventListener("click", () => setQty(card, getQty(card) + 1));
+  wrap.querySelector(".set-qty-input").addEventListener("change", () => setQty(card, getQty(card)));
+  setQtyDisabled(card, !!disabled);
+}
+
+function getQty(card) {
+  const el = card.querySelector(".set-qty-input");
+  const n = Math.floor(Number(el ? el.value : 1));
+  return n >= 1 ? n : 1;
+}
+
+function setQty(card, n) {
+  const el = card.querySelector(".set-qty-input");
+  if (!el) return;
+  const max = Number(card.dataset.maxQty) || Infinity;
+  el.value = Math.min(Math.max(1, Math.floor(n) || 1), max);
+}
+
+function setQtyDisabled(card, disabled) {
+  card.querySelectorAll(".qty-minus, .qty-plus, .set-qty-input").forEach(el => { el.disabled = disabled; });
+}
+
 // ================= 2.5 หมวดเหรียญ: 3 ช่อง (ช่วงเลเวล) x เลือก 1 แสน / 5 แสน / 1 ล้าน =================
 function coinsInCart() {
   return cartState.items.reduce((sum, item) => sum + (item.coinAmount || 0) * item.quantity, 0);
@@ -225,6 +270,7 @@ function renderCoinTierCard(tier, container) {
   });
 
   const addBtn = card.querySelector(".add-upgrade");
+  attachQtyStepper(card, addBtn, 0, false);
   addBtn.addEventListener("click", () => addCoinToCart(card, tier));
   addBtn.onmouseenter = () => { if (!addBtn.disabled) addBtn.style.backgroundColor = theme.hover; };
   addBtn.onmouseleave = () => { if (!addBtn.disabled) addBtn.style.backgroundColor = theme.main; };
@@ -271,6 +317,12 @@ function updateCoinCard(card) {
 
   const addBtn = card.querySelector(".add-upgrade");
   const canAdd = available && selected > 0;
+
+  // จำนวนชุดสูงสุดที่ซื้อได้ = เหรียญคงเหลือ (หักของในตะกร้า) / เหรียญต่อชุด
+  card.dataset.maxQty = String(selected > 0 ? Math.max(1, Math.floor(remaining / selected)) : 1);
+  setQty(card, getQty(card));
+  setQtyDisabled(card, !canAdd);
+
   addBtn.disabled = !canAdd;
   addBtn.style.backgroundColor = canAdd ? theme.main : "#a6b8a4";
   addBtn.style.color = canAdd ? theme.text : "#ffffff";
@@ -289,6 +341,7 @@ function addCoinToCart(card, tier) {
   const opt = COIN_AMOUNTS.find(o => o.amount === amount);
   if (!opt) return setValidation(card, "กรุณาเลือกจำนวนเหรียญ", true);
 
+  const qty = getQty(card);
   const ok = addCartItem({
     cartId: `coin-${tier.id}-${amount}`,
     productId: tier.id,
@@ -300,10 +353,14 @@ function addCoinToCart(card, tier) {
     stock: Infinity,
     coinAmount: amount,
     sheetName: 'coin'
-  });
+  }, qty);
 
-  if (ok) setValidation(card, "เพิ่มลงตะกร้าแล้ว 🌻", false);
-  else setValidation(card, "เหรียญคงเหลือไม่พอสำหรับจำนวนนี้", true);
+  if (ok) {
+    setQty(card, 1);
+    setValidation(card, `เพิ่มลงตะกร้าแล้ว ${qty} ชุด 🌻`, false);
+  } else {
+    setValidation(card, "เหรียญคงเหลือไม่พอสำหรับจำนวนนี้", true);
+  }
 }
 
 // ================= 3. วาดการ์ดสินค้าแบบแพ็กเกจ =================
@@ -357,6 +414,7 @@ function renderPackProductCard(product, container) {
   addBtn.style.color = available ? theme.text : "#ffffff";
   addBtn.onmouseenter = () => { if (available) addBtn.style.backgroundColor = theme.hover; };
   addBtn.onmouseleave = () => { if (available) addBtn.style.backgroundColor = theme.main; };
+  attachQtyStepper(card, addBtn, Number(product.stock_quantity), !available);
   addBtn.addEventListener("click", () => addUpgradeToCart(card, product));
 
   container.appendChild(fragment);
@@ -469,7 +527,8 @@ function addUpgradeToCart(card, product) {
   }
 
   const cartId = `${product.id}-${packKey}-${details}`;
-  addCartItem({
+  const qty = getQty(card);
+  const ok = addCartItem({
     cartId,
     productId: product.id,
     name: product.name,
@@ -479,8 +538,14 @@ function addUpgradeToCart(card, product) {
     unitPrice: packPrice,
     stock: product.stock_quantity,
     sheetName: product.sheetName
-  });
-  setValidation(card, "เพิ่มลงตะกร้าแล้ว 🌻", false);
+  }, qty);
+
+  if (ok) {
+    setQty(card, 1);
+    setValidation(card, `เพิ่มลงตะกร้าแล้ว ${qty} ชุด 🌻`, false);
+  } else {
+    setValidation(card, `เกินสต็อกที่มี (เหลือ ${product.stock_quantity} ชุด รวมที่อยู่ในตะกร้าแล้ว)`, true);
+  }
 }
 
 // ================= 4. วาดการ์ดปกติ (ชิ้นเดี่ยว) =================
@@ -516,8 +581,10 @@ function renderSimpleProductCard(product, container) {
   addBtn.onmouseenter = () => { if (available) addBtn.style.backgroundColor = theme.hover; };
   addBtn.onmouseleave = () => { if (available) addBtn.style.backgroundColor = theme.main; };
 
+  attachQtyStepper(card, addBtn, Number(product.stock_quantity), !available);
   addBtn.addEventListener("click", () => {
-    addCartItem({
+    const qty = getQty(card);
+    const ok = addCartItem({
       cartId: product.id,
       productId: product.id,
       name: product.name,
@@ -527,7 +594,14 @@ function renderSimpleProductCard(product, container) {
       unitPrice: product.price,
       stock: product.stock_quantity,
       sheetName: product.sheetName
-    });
+    }, qty);
+
+    if (ok) {
+      setQty(card, 1);
+      setValidation(card, `เพิ่มลงตะกร้าแล้ว ${qty} ชุด 🌻`, false);
+    } else {
+      setValidation(card, `เกินสต็อกที่มี (เหลือ ${product.stock_quantity} ชุด รวมที่อยู่ในตะกร้าแล้ว)`, true);
+    }
   });
 
   container.appendChild(fragment);
@@ -559,20 +633,20 @@ function setValidation(card, message, isError) {
 
 // ================= 5. ระบบจัดการตะกร้า =================
 // คืนค่า true ถ้าเพิ่มสำเร็จ
-function addCartItem(newItem) {
+function addCartItem(newItem, qty = 1) {
   const existing = cartState.items.find(item => item.cartId === newItem.cartId);
 
   if (newItem.coinAmount) {
     // เหรียญ: สต็อกใช้ร่วมกันทั้งหมด เช็กจากยอดเหรียญรวมในตะกร้า
-    if (coinsInCart() + newItem.coinAmount > coinStock) return false;
-  } else if (existing && existing.quantity >= newItem.stock) {
+    if (coinsInCart() + newItem.coinAmount * qty > coinStock) return false;
+  } else if ((existing ? existing.quantity : 0) + qty > newItem.stock) {
     return false;
   }
 
   if (existing) {
-    existing.quantity += 1;
+    existing.quantity += qty;
   } else {
-    cartState.items.push({ ...newItem, quantity: 1 });
+    cartState.items.push({ ...newItem, quantity: qty });
   }
   renderCart();
   return true;
