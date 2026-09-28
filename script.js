@@ -240,13 +240,19 @@ function renderDynamicCategories() {
     viewDiv.className = index === 0 ? "mt-7" : "hidden mt-7";
 
     const gridDiv = document.createElement("div");
+    
+    // --------------------------------------------------------
+    // จุดที่แก้ไขแล้ว: ปรับการแสดงผลให้เป็น 3 คอลัมน์บนมือถือ
+    // --------------------------------------------------------
     if (layout.cardWidth) {
-      // ตั้งความกว้างการ์ดจากชีตสไตล์: จำนวนคอลัมน์ปรับตามหน้าจออัตโนมัติ
-      gridDiv.className = "grid gap-5";
+      gridDiv.className = "grid gap-2 sm:gap-5";
       gridDiv.style.gridTemplateColumns = `repeat(auto-fill, minmax(min(${layout.cardWidth}px, 100%), 1fr))`;
     } else {
-      gridDiv.className = "grid grid-cols-1 gap-5 lg:grid-cols-3";
+      // บังคับให้เป็น 3 คอลัมน์ (grid-cols-3) บนมือถือ และลดช่องว่าง (gap-2)
+      gridDiv.className = "grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5 sm:gap-4";
     }
+    // --------------------------------------------------------
+
     viewDiv.appendChild(gridDiv);
     viewsContainer.appendChild(viewDiv);
 

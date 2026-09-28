@@ -15,6 +15,11 @@
 </head>
 
 <body data-template-id="__page-root" class="farm-bg min-h-screen w-full overflow-x-hidden">
+  
+  <!-- แบนเนอร์ประกาศด้านบนสุด -->
+  <aside data-template-id="demo-banner" class="canva-banner bg-[#fff0ad] border-b border-[#edcf63] px-4 py-2 text-center text-sm font-semibold text-[#6f5610]">
+    <span data-template-id="demo-banner-text" class="canva-text">โหมดสาธิต: กรุณาตรวจสอบสต็อกและรายละเอียดกับร้านค้าก่อนสั่งซื้อ</span>
+  </aside>
 
   <!-- ส่วนหัวของเว็บ -->
   <header data-template-id="site-header" class="canva-header relative overflow-hidden bg-[#dff3ff] border-b-4 border-[#b9e3f5]">
@@ -53,7 +58,6 @@
     </div>
   </header>
 
-  <!-- เนื้อหาหลัก -->
   <!-- เนื้อหาหลัก -->
   <main class="w-full">
     <section id="catalog" class="w-full max-w-6xl mx-auto px-4 sm:px-6 py-9">
@@ -147,22 +151,25 @@
   <template id="upgrade-card-template">
     <article data-template-id="upgrade-product-card" class="canva-card product-card overflow-hidden rounded-3xl border border-[#dcead5] bg-white farm-card">
       <div class="h-2 bg-[#78b85c]"></div>
-      <div class="p-5">
-        <div class="flex items-start justify-between gap-3">
+      <!-- เปลี่ยนระยะขอบจาก p-5 เป็น p-2 sm:p-3 -->
+      <div class="p-2 sm:p-3">
+        <div class="flex items-start justify-between gap-1 sm:gap-3">
           <div>
-            <p class="upgrade-category text-xs font-bold text-[#d5765e]"></p>
-            <h3 class="upgrade-name mt-1 text-xl font-bold text-[#356a47]"></h3>
-          </div><span class="stock-badge rounded-full px-3 py-1 text-xs font-bold"></span>
+            <p class="upgrade-category text-[10px] sm:text-xs font-bold text-[#d5765e]"></p>
+            <!-- ลดขนาดตัวหนังสือจาก text-xl เป็น text-sm sm:text-base -->
+            <h3 class="upgrade-name mt-1 text-sm sm:text-base font-bold text-[#356a47]"></h3>
+          </div><span class="stock-badge rounded-full px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-bold"></span>
         </div>
-        <div class="product-image-wrap mt-4 flex h-28 items-center justify-center overflow-hidden rounded-2xl bg-[#eff8ea]">
+        <div class="product-image-wrap mt-2 sm:mt-4 flex h-20 sm:h-28 items-center justify-center overflow-hidden rounded-2xl bg-[#eff8ea]">
           <img class="product-image hidden h-full w-full object-cover" loading="lazy">
-          <div class="image-placeholder text-center text-sm font-semibold text-[#789077]">ยังไม่มีรูปสินค้า</div>
+          <div class="image-placeholder text-center text-[10px] sm:text-sm font-semibold text-[#789077]">ยังไม่มีรูป</div>
         </div>
-        <div class="pack-choices mt-4 grid grid-cols-3 gap-2"></div>
-        <div class="mix-note hidden mt-3 rounded-xl bg-[#fff4cf] px-3 py-2 text-sm text-[#785a15]">ร้านค้าจะคละสินค้าให้</div>
-        <div class="allocation hidden mt-3"></div>
-        <p class="validation-message mt-3 hidden rounded-xl px-3 py-2 text-sm" aria-live="polite"></p>
-        <button type="button" class="add-upgrade mt-4 w-full rounded-2xl bg-[#4d9b55] py-3 font-bold text-white transition hover:bg-[#2f7640] disabled:cursor-not-allowed disabled:bg-[#a6b8a4]">เพิ่มลงตะกร้า</button>
+        <p class="demo-stock-note mt-2 sm:mt-3 text-[10px] sm:text-xs text-[#798c79]">สต็อกตัวอย่าง กรุณาตรวจสอบก่อนสั่งซื้อ</p>
+        <div class="pack-choices mt-2 sm:mt-4 grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2"></div>
+        <div class="mix-note hidden mt-2 sm:mt-3 rounded-xl bg-[#fff4cf] px-2 py-1.5 sm:px-3 sm:py-2 text-[10px] sm:text-sm text-[#785a15]">ร้านค้าจะคละสินค้าให้</div>
+        <div class="allocation hidden mt-2 sm:mt-3"></div>
+        <p class="validation-message mt-2 sm:mt-3 hidden rounded-xl px-2 py-1.5 sm:px-3 sm:py-2 text-[10px] sm:text-sm" aria-live="polite"></p>
+        <button type="button" class="add-upgrade mt-2 sm:mt-4 w-full rounded-xl sm:rounded-2xl bg-[#4d9b55] py-2 sm:py-3 text-xs sm:text-base font-bold text-white transition hover:bg-[#2f7640] disabled:cursor-not-allowed disabled:bg-[#a6b8a4]">เพิ่มลงตะกร้า</button>
       </div>
     </article>
   </template>
@@ -170,20 +177,24 @@
   <template id="coin-card-template">
     <article data-template-id="coin-product-card" class="canva-card product-card overflow-hidden rounded-3xl border border-[#cbe6ef] bg-white farm-card">
       <div class="h-2 bg-[#67b9db]"></div>
-      <div class="p-5">
-        <div class="flex items-start justify-between gap-3">
+      <!-- เปลี่ยนระยะขอบจาก p-5 เป็น p-2 sm:p-3 -->
+      <div class="p-2 sm:p-3">
+        <div class="flex items-start justify-between gap-1 sm:gap-3">
           <div>
-            <p class="coin-level text-sm font-bold text-[#477b91]"></p>
-            <h3 class="coin-name mt-1 text-xl font-bold text-[#356a47]"></h3>
-          </div><span class="stock-badge rounded-full px-3 py-1 text-xs font-bold"></span>
+            <p class="coin-level text-[10px] sm:text-sm font-bold text-[#477b91]"></p>
+            <!-- ลดขนาดตัวหนังสือจาก text-xl เป็น text-sm sm:text-base -->
+            <h3 class="coin-name mt-1 text-sm sm:text-base font-bold text-[#356a47]"></h3>
+          </div><span class="stock-badge rounded-full px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-bold"></span>
         </div>
-        <div class="product-image-wrap mt-4 flex h-28 items-center justify-center overflow-hidden rounded-2xl bg-[#eaf8fd]">
+        <div class="product-image-wrap mt-2 sm:mt-4 flex h-20 sm:h-28 items-center justify-center overflow-hidden rounded-2xl bg-[#eaf8fd]">
           <img class="product-image hidden h-full w-full object-cover" loading="lazy">
-          <div class="image-placeholder text-center text-sm font-semibold text-[#789077]">ยังไม่มีรูปสินค้า</div>
+          <div class="image-placeholder text-center text-[10px] sm:text-sm font-semibold text-[#789077]">ยังไม่มีรูป</div>
         </div>
-        <p class="coin-price mt-4 text-lg font-bold text-[#df745c]"></p>
-        <p class="coin-stock mt-1 text-sm text-[#637a70]"></p>
-        <button type="button" class="add-coin mt-4 w-full rounded-2xl bg-[#4d9b55] py-3 font-bold text-white transition hover:bg-[#2f7640] disabled:cursor-not-allowed disabled:bg-[#a6b8a4]">เพิ่มลงตะกร้า</button>
+        <!-- ลดขนาดราคาจาก text-lg เป็น text-sm -->
+        <p class="coin-price mt-2 sm:mt-4 text-sm font-bold text-[#df745c]"></p>
+        <p class="coin-stock mt-1 text-[10px] sm:text-sm text-[#637a70]"></p>
+        <p class="demo-stock-note mt-2 sm:mt-3 text-[10px] sm:text-xs text-[#798c79]">สต็อกตัวอย่าง กรุณาตรวจสอบก่อนสั่งซื้อ</p>
+        <button type="button" class="add-coin mt-2 sm:mt-4 w-full rounded-xl sm:rounded-2xl bg-[#4d9b55] py-2 sm:py-3 text-xs sm:text-base font-bold text-white transition hover:bg-[#2f7640] disabled:cursor-not-allowed disabled:bg-[#a6b8a4]">เพิ่มลงตะกร้า</button>
       </div>
     </article>
   </template>
