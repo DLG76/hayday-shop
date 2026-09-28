@@ -175,8 +175,8 @@ async function loadDataFromSheetDB() {
 
   try {
     const [stockResponse, coinResponse, stockCoins, styles] = await Promise.all([
-      fetch(SHEETDB_URL + '?sheet=Stock&t=' + Date.now()), // เพิ่มเพื่อล้างแคช
-      fetch(SHEETDB_URL + '?sheet=coin&t=' + Date.now()),  // เพิ่มเพื่อล้างแคช
+      fetch(SHEETDB_URL + '?sheet=Stock&t=' + Date.now()),
+      fetch(SHEETDB_URL + '?sheet=coin&t=' + Date.now()),
       fetchCoinStock().catch(err => { console.error("Error fetching coin stock:", err); return 0; }),
       fetchStyleSheet().catch(err => { console.error("Error fetching style sheet:", err); return {}; })
     ]);
@@ -190,6 +190,21 @@ async function loadDataFromSheetDB() {
     if (!stockData.error) rawData = rawData.concat(stockData.map(item => ({ ...item, sheetName: 'Stock' })));
     if (!coinData.error) rawData = rawData.concat(coinData.map(item => ({ ...item, category: 'coin', sheetName: 'coin' })));
 
+    // --- ระบบเช็กรูปโปรโมชั่น ---
+    const promoItem = rawData.find(item => String(item.id).toLowerCase() === 'promo' || String(item.category).toUpperCase() === 'PROMO');
+    const promoSection = document.getElementById('promo-banner-section');
+    const promoImg = document.getElementById('promo-banner-img');
+
+    if (promoItem && String(promoItem.active).toLowerCase() === 'true' && promoItem.image_url) {
+      if (promoSection && promoImg) {
+        promoImg.src = promoItem.image_url;
+        promoSection.classList.remove('hidden');
+      }
+    } else {
+      if (promoSection) promoSection.classList.add('hidden');
+    }
+    // -------------------------
+
     allProducts = rawData.map(item => ({
       ...item,
       price: parseNumber(item.price),
@@ -202,8 +217,8 @@ async function loadDataFromSheetDB() {
       stock_quantity: parseNumber(item.stock_quantity),
       active: String(item.active).toLowerCase() === 'true',
       items: item.items ? item.items.split(',').map(i => i.trim()).filter(i => i !== '') : [],
-      price_tiers: parseTiers(item.price_tiers) // เก็บข้อมูลราคาส่ง
-    })).filter(product => product.active);
+      price_tiers: parseTiers(item.price_tiers) 
+    })).filter(product => product.active && String(product.id).toLowerCase() !== 'promo' && String(product.category).toUpperCase() !== 'PROMO'); // เอาแถว PROMO ออกจากแท็บสินค้า
 
     renderDynamicCategories();
     document.getElementById("loading-state").classList.add("hidden");
