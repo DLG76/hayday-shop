@@ -107,15 +107,18 @@ function applyCardStyle(card, category) {
   const name = card.querySelector(".upgrade-name, .coin-name");
   if (name && layout.nameSize) name.style.fontSize = `${layout.nameSize}px`;
 
-  // ความสูงการ์ด: ตั้งเป็นความสูงขั้นต่ำ (ถ้ามีรายการเยอะการ์ดจะขยายเอง)
-  // และดันปุ่มเพิ่มลงตะกร้าไปชิดด้านล่างของการ์ด
+  // ความสูงการ์ด: กำหนดความสูงตายตัวตามที่ตั้ง (ทั้งเพิ่มและลด)
+  // ถ้าเนื้อหายาวกว่าความสูงที่ตั้ง ส่วนเนื้อหาจะเลื่อนดูได้ในการ์ด
+  // ปุ่มเพิ่มลงตะกร้าจะชิดด้านล่างของเนื้อหาเสมอ
   if (layout.cardHeight) {
-    card.style.minHeight = `${layout.cardHeight}px`;
+    card.style.height = `${layout.cardHeight}px`;
     card.style.display = "flex";
     card.style.flexDirection = "column";
     const body = card.children[1];
     if (body) {
       body.style.flex = "1";
+      body.style.minHeight = "0";
+      body.style.overflowY = "auto";
       body.style.display = "flex";
       body.style.flexDirection = "column";
     }
@@ -284,6 +287,8 @@ function switchCategory(category) {
 function attachQtyStepper(card, beforeEl, maxQty, disabled) {
   const wrap = document.createElement("div");
   wrap.className = "qty-stepper mt-4 flex items-center justify-between gap-3";
+  // เมื่อตั้งความสูงการ์ด ปุ่มเพิ่มลงตะกร้าจะถูกดันลงล่าง จึงเว้นระยะใต้ตัวเลือกจำนวนไว้
+  if (card.style.height) wrap.style.marginBottom = "1rem";
   wrap.innerHTML = `
     <span class="text-sm font-bold text-[#496555]">จำนวนชุด</span>
     <div class="flex items-center gap-2">
