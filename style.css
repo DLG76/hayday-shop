@@ -1,0 +1,40 @@
+:root {
+  --leaf: #4d9b55;
+  --leaf-dark: #2f7640;
+  --sun: #ffc944;
+  --sky: #dff3ff;
+  --peach: #ffb9a5;
+  --cream: #fff9e9;
+  --ink: #284335;
+  --line: #dbe8d3;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { 
+  font-family: "Noto Sans Thai", sans-serif; 
+  color: var(--ink); 
+  background-color: rgb(255, 249, 233);
+}
+h1, h2, h3 { font-family: "Mitr", sans-serif; }
+button, input, textarea { font: inherit; }
+button:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 3px solid #f7a628; outline-offset: 3px;
+}
+.farm-bg {
+  background-color: #fff9e9;
+  background-image: radial-gradient(#ffffff 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
+}
+.cloud { position:absolute; border-radius:999px; background:rgba(255,255,255,.72); filter:blur(.2px); }
+.cloud:before,.cloud:after { content:""; position:absolute; background:inherit; border-radius:50%; }
+.cloud:before { width:35px;height:35px;left:18px;bottom:0; }
+.cloud:after { width:50px;height:50px;left:48px;bottom:0; }
+.farm-card { box-shadow: 0 10px 24px rgba(72, 105, 61, .10); }
+.product-card { animation: pop .35s ease both; }
+@keyframes pop { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
+.drawer-open { transform: translateX(0) !important; }
+.overlay-show { opacity:1 !important; pointer-events:auto !important; }
+.tab-active { background:#4d9b55 !important; color:#fff !important; transform:translateY(-2px); }
+.choice-active { border-color:#4d9b55 !important; background:#effbe9 !important; }
+.qty-input::-webkit-outer-spin-button, .qty-input::-webkit-inner-spin-button { appearance:none; margin:0; }
+.qty-input { appearance:textfield; }

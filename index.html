@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hayday ร้านไอเท็มฟาร์ม</title>
+  
+  <!-- Fonts & Libraries -->
+  <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.577.0/dist/umd/lucide.min.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+  
+  <!-- เชื่อมต่อ CSS ที่แยกออกไป -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body data-template-id="__page-root" class="farm-bg min-h-screen w-full overflow-x-hidden">
+  
+  <!-- แบนเนอร์ประกาศด้านบนสุด -->
+  <aside data-template-id="demo-banner" class="canva-banner bg-[#fff0ad] border-b border-[#edcf63] px-4 py-2 text-center text-sm font-semibold text-[#6f5610]">
+    <span data-template-id="demo-banner-text" class="canva-text">โหมดสาธิต: กรุณาตรวจสอบสต็อกและรายละเอียดกับร้านค้าก่อนสั่งซื้อ</span>
+  </aside>
+
+  <!-- ส่วนหัวของเว็บ -->
+  <header data-template-id="site-header" class="canva-header relative overflow-hidden bg-[#dff3ff] border-b-4 border-[#b9e3f5]">
+    <div class="cloud w-24 h-7 top-7 left-[6%]"></div>
+    <div class="cloud w-20 h-6 top-14 right-[12%] opacity-70"></div>
+    <div class="relative w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div class="inline-flex items-center gap-2 text-2xl" aria-hidden="true">🌻 <span>🌱</span></div>
+          <h1 data-template-id="brand-title" class="canva-text mt-1 text-[#2f7640] font-bold leading-tight text-[32px]">Hayday</h1>
+          <p data-template-id="brand-tagline" class="canva-text mt-1 text-[#4a6c61] text-[18px]">ร้านไอเท็มฟาร์มแสนสดใส</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button data-template-id="browse-button" type="button" class="canva-button inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 font-bold shadow-sm transition hover:-translate-y-0.5 bg-[#ffc944] text-[#594300]" onclick="document.getElementById('catalog').scrollIntoView({behavior:'smooth'})"> 
+            <i data-lucide="sprout" class="w-5 h-5"></i>
+            <span data-template-id="browse-button-text" class="canva-text">ดูหมวดสินค้า</span> 
+          </button> 
+          <button data-template-id="cart-button" type="button" class="canva-button inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 font-bold shadow-sm transition hover:-translate-y-0.5 bg-[#4d9b55] text-white" onclick="toggleCart(true)"> 
+            <i data-lucide="shopping-basket" class="w-5 h-5"></i>
+            <span data-template-id="cart-button-text" class="canva-text">ตะกร้าของฉัน</span> 
+            <span id="cart-count" class="min-w-6 rounded-full bg-white px-2 py-0.5 text-xs text-[#2f7640]">0</span> 
+          </button>
+        </div>
+      </div>
+      
+      <!-- แผงควบคุมเพลง -->
+      <section id="music-panel" data-template-id="music-panel" class="canva-panel hidden mt-5 max-w-xl rounded-2xl border border-white/80 bg-white/70 p-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <span data-template-id="music-label" class="canva-text text-sm font-semibold text-[#356a47]">เพลงประกอบฟาร์ม</span> 
+          <button data-template-id="music-play-button" type="button" class="canva-button rounded-xl px-3 py-2 text-sm font-semibold bg-[#dff3d6] text-[#2f7640]" onclick="playMusic()"><span data-template-id="music-play-button-text" class="canva-text">เล่นเพลง</span></button> 
+          <button data-template-id="music-stop-button" type="button" class="canva-button rounded-xl px-3 py-2 text-sm font-semibold bg-[#ffe0d9] text-[#9d4e40]" onclick="stopMusic()"><span data-template-id="music-stop-button-text" class="canva-text">หยุดเพลง</span></button> 
+          <label data-template-id="music-volume-label" class="canva-text ml-auto flex items-center gap-2 text-sm text-[#4a6c61]" for="music-volume">ระดับเสียง</label> 
+          <input id="music-volume" aria-label="ระดับเสียงเพลง" type="range" min="0" max="1" step="0.05" value="0.4" class="accent-[#4d9b55]" oninput="setVolume(this.value)">
+        </div>
+      </section>
+    </div>
+  </header>
+
+  <!-- เนื้อหาหลัก -->
+  <!-- เนื้อหาหลัก -->
+  <main class="w-full">
+    <section id="catalog" class="w-full max-w-6xl mx-auto px-4 sm:px-6 py-9">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p data-template-id="catalog-kicker" class="canva-text text-sm font-bold tracking-wide text-[#d5765e]">เลือกของเข้าฟาร์ม</p>
+          <h2 data-template-id="catalog-title" class="canva-text mt-1 font-bold text-[#2f7640] text-2xl">แคตตาล็อกสินค้า</h2>
+          <p data-template-id="catalog-note" class="canva-text mt-2 max-w-2xl text-sm text-[#61796c]">ข้อมูลทั้งหมดเป็นตัวอย่างเพื่อให้เลือกแพ็กได้ง่าย สต็อกที่แสดงไม่ใช่สต็อกจริง</p>
+        </div>
+        
+        <!-- แท็บสลับหมวดหมู่สินค้า (สร้างอัตโนมัติจาก JS) -->
+        <div id="dynamic-tabs-container" class="canva-tabs flex w-full gap-2 overflow-x-auto sm:w-auto p-1">
+          <!-- ปุ่ม Tab จะถูกสร้างที่นี่ -->
+        </div>
+      </div>
+
+      <!-- สถานะตอนกำลังโหลด -->
+      <div id="loading-state" data-template-id="loading-state" class="canva-panel mt-7 rounded-3xl border border-[#dbe8d3] bg-white p-10 text-center">
+        <div class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-[#d7edcc] border-t-[#4d9b55]"></div>
+        <p data-template-id="loading-text" class="canva-text text-[#587261]">กำลังโหลดข้อมูลจากฐานข้อมูล...</p>
+      </div>
+
+      <!-- สถานะ Error -->
+      <div id="error-state" class="canva-banner hidden mt-7 rounded-2xl border border-[#f1b0a0] bg-[#fff1ed] p-4 text-center">
+        <p data-template-id="error-text" class="canva-text font-semibold text-[#ad5545]">โหลดรายการสินค้าไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</p>
+      </div>
+      
+      <!-- พื้นที่แสดงตารางสินค้าแต่ละหมวด (สร้างอัตโนมัติจาก JS) -->
+      <div id="dynamic-views-container">
+        <!-- ตารางสินค้าจะถูกสร้างที่นี่ -->
+      </div>
+      
+      <!-- กรณีไม่มีสินค้า -->
+      <div id="empty-state" data-template-id="empty-state" class="canva-panel hidden mt-7 rounded-3xl border border-dashed border-[#b9d7b4] bg-white/70 p-10 text-center">
+        <div class="text-4xl" aria-hidden="true">🌾</div>
+        <p data-template-id="empty-title" class="canva-text mt-3 font-bold text-[#356a47]">ยังไม่มีสินค้า</p>
+        <p data-template-id="empty-text" class="canva-text mt-1 text-sm text-[#64786c]">กรุณากลับมาตรวจสอบอีกครั้งภายหลัง</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ตะกร้าสินค้า -->
+  <div id="cart-overlay" class="fixed inset-0 z-40 bg-[#173b2a]/30 opacity-0 pointer-events-none transition-opacity" onclick="toggleCart(false)"></div>
+  <aside id="cart-drawer" data-template-id="cart-drawer" class="canva-sidebar fixed right-0 top-0 z-50 flex h-[calc(100*min(var(--vh,1vh),1vh))] w-full max-w-md translate-x-full flex-col bg-[#fffdf5] shadow-2xl transition-transform duration-300" aria-label="ตะกร้าสินค้า" aria-hidden="true">
+    <div data-template-id="cart-header" class="canva-header flex items-center justify-between bg-[#4d9b55] px-5 py-5 text-white">
+      <div>
+        <h2 data-template-id="cart-title" class="canva-text font-bold text-2xl">ตะกร้าฟาร์มของฉัน</h2>
+        <p data-template-id="cart-subtitle" class="canva-text text-sm text-[#e5f9df]">ตรวจสอบรายการก่อนส่งคำขอ</p>
+      </div>
+      <button data-template-id="cart-close-button" type="button" class="canva-button rounded-xl bg-white/15 p-2 text-white" aria-label="ปิดตะกร้า" onclick="toggleCart(false)"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    
+    <div id="cart-items" class="flex-1 overflow-y-auto p-5"></div>
+    
+    <div id="cart-empty" data-template-id="cart-empty" class="canva-panel mx-5 my-auto rounded-2xl border border-dashed border-[#bbdcb4] bg-[#f6fff0] p-7 text-center">
+      <div class="text-3xl" aria-hidden="true">🧺</div>
+      <p data-template-id="cart-empty-title" class="canva-text mt-2 font-bold text-[#356a47]">ตะกร้ายังว่างอยู่</p>
+      <p data-template-id="cart-empty-text" class="canva-text mt-1 text-sm text-[#64786c]">เลือกไอเท็มที่อยากได้จากแคตตาล็อกได้เลย</p>
+    </div>
+    
+    <form id="checkout-form" class="border-t border-[#e0eadb] bg-white p-5" onsubmit="submitOrder(event)">
+      <div class="mb-3 flex items-center justify-between">
+        <span data-template-id="total-label" class="canva-text font-bold text-[#356a47]">ยอดรวมโดยประมาณ</span> 
+        <strong id="cart-total" class="text-xl text-[#dd745c]">0 บาท</strong>
+      </div>
+      <label data-template-id="customer-name-label" class="canva-text mb-1 block text-sm font-semibold text-[#385542]" for="customer-name">ชื่อผู้สั่ง</label> 
+      <input id="customer-name" type="text" class="mb-3 w-full rounded-xl border border-[#cfe0ca] px-3 py-2.5" autocomplete="name"> 
+      <label data-template-id="contact-label" class="canva-text mb-1 block text-sm font-semibold text-[#385542]" for="customer-contact">ช่องทางติดต่อ</label> 
+      <input id="customer-contact" type="text" class="mb-3 w-full rounded-xl border border-[#cfe0ca] px-3 py-2.5" autocomplete="email"> 
+      <label data-template-id="note-label" class="canva-text mb-1 block text-sm font-semibold text-[#385542]" for="customer-note">หมายเหตุ (ถ้ามี)</label> 
+      <textarea id="customer-note" rows="2" class="w-full rounded-xl border border-[#cfe0ca] px-3 py-2.5"></textarea>
+      <p id="checkout-message" class="mt-2 hidden rounded-xl px-3 py-2 text-sm" aria-live="polite"></p>
+      <button data-template-id="submit-order-button" type="submit" class="canva-button mt-3 w-full rounded-2xl py-3 font-bold shadow-sm bg-[#ffb9a5] text-[#6e3529]"><span data-template-id="submit-order-button-text" class="canva-text">ส่งคำสั่งซื้อ</span></button>
+    </form>
+  </aside>
+
+  <!-- ป๊อปอัปยืนยันการสั่งซื้อ -->
+  <div id="confirmation-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-[#173b2a]/45 p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <section data-template-id="confirmation-card" class="canva-card w-full max-w-md rounded-3xl bg-[#fffdf5] p-7 text-center shadow-2xl">
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#dff3d6] text-[#2f7640]">
+        <i data-lucide="check" class="w-7 h-7"></i>
+      </div>
+      <h2 id="confirm-title" data-template-id="confirmation-title" class="canva-text mt-4 font-bold text-[#2f7640] text-2xl">ส่งคำขอสั่งซื้อแล้ว</h2>
+      <p id="order-reference" class="mt-3 rounded-xl bg-[#fff0ad] px-3 py-2 font-bold text-[#76540c]"></p>
+      <p data-template-id="confirmation-text" class="canva-text mt-4 text-sm leading-6 text-[#566e60]">นี่เป็นการส่งคำขอในหน้านี้เท่านั้น ยังไม่ใช่การชำระเงินจริง กรุณาติดต่อร้านค้าเพื่อตรวจสอบสต็อกและรายละเอียดก่อนดำเนินการต่อ</p>
+      <button data-template-id="confirmation-close-button" type="button" class="canva-button mt-5 rounded-2xl px-6 py-3 font-bold bg-[#4d9b55] text-white" onclick="closeConfirmation()"><span data-template-id="confirmation-close-button-text" class="canva-text">เข้าใจแล้ว</span></button>
+    </section>
+  </div>
+
+  <!-- เทมเพลตสำหรับสร้างการ์ดสินค้า -->
+  <template id="upgrade-card-template">
+    <article data-template-id="upgrade-product-card" class="canva-card product-card overflow-hidden rounded-3xl border border-[#dcead5] bg-white farm-card">
+      <div class="h-2 bg-[#78b85c]"></div>
+      <div class="p-5">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="upgrade-category text-xs font-bold text-[#d5765e]"></p>
+            <h3 class="upgrade-name mt-1 text-xl font-bold text-[#356a47]"></h3>
+          </div><span class="stock-badge rounded-full px-3 py-1 text-xs font-bold"></span>
+        </div>
+        <div class="product-image-wrap mt-4 flex h-28 items-center justify-center overflow-hidden rounded-2xl bg-[#eff8ea]">
+          <img class="product-image hidden h-full w-full object-cover" loading="lazy">
+          <div class="image-placeholder text-center text-sm font-semibold text-[#789077]">ยังไม่มีรูปสินค้า</div>
+        </div>
+        <p class="demo-stock-note mt-3 text-xs text-[#798c79]">สต็อกตัวอย่าง กรุณาตรวจสอบก่อนสั่งซื้อ</p>
+        <div class="pack-choices mt-4 grid grid-cols-3 gap-2"></div>
+        <div class="mix-note hidden mt-3 rounded-xl bg-[#fff4cf] px-3 py-2 text-sm text-[#785a15]">ร้านค้าจะคละสินค้าให้</div>
+        <div class="allocation hidden mt-3"></div>
+        <p class="validation-message mt-3 hidden rounded-xl px-3 py-2 text-sm" aria-live="polite"></p>
+        <button type="button" class="add-upgrade mt-4 w-full rounded-2xl bg-[#4d9b55] py-3 font-bold text-white transition hover:bg-[#2f7640] disabled:cursor-not-allowed disabled:bg-[#a6b8a4]">เพิ่มลงตะกร้า</button>
+      </div>
+    </article>
+  </template>
+
+  <template id="coin-card-template">
+    <article data-template-id="coin-product-card" class="canva-card product-card overflow-hidden rounded-3xl border border-[#cbe6ef] bg-white farm-card">
+      <div class="h-2 bg-[#67b9db]"></div>
+      <div class="p-5">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="coin-level text-sm font-bold text-[#477b91]"></p>
+            <h3 class="coin-name mt-1 text-xl font-bold text-[#356a47]"></h3>
+          </div><span class="stock-badge rounded-full px-3 py-1 text-xs font-bold"></span>
+        </div>
+        <div class="product-image-wrap mt-4 flex h-28 items-center justify-center overflow-hidden rounded-2xl bg-[#eaf8fd]">
+          <img class="product-image hidden h-full w-full object-cover" loading="lazy">
+          <div class="image-placeholder text-center text-sm font-semibold text-[#789077]">ยังไม่มีรูปสินค้า</div>
+        </div>
+        <p class="coin-price mt-4 text-lg font-bold text-[#df745c]"></p>
+        <p class="coin-stock mt-1 text-sm text-[#637a70]"></p>
+        <p class="demo-stock-note mt-3 text-xs text-[#798c79]">สต็อกตัวอย่าง กรุณาตรวจสอบก่อนสั่งซื้อ</p>
+        <button type="button" class="add-coin mt-4 w-full rounded-2xl bg-[#4d9b55] py-3 font-bold text-white transition hover:bg-[#2f7640] disabled:cursor-not-allowed disabled:bg-[#a6b8a4]">เพิ่มลงตะกร้า</button>
+      </div>
+    </article>
+  </template>
+
+  <!-- เชื่อมต่อ Javascript หลักที่แยกออกไป -->
+  <script src="script.js"></script>
+</body>
+</html>
